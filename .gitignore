@@ -1,0 +1,41 @@
+# Ignore Python bytecode files
+__pycache__/
+*.py[cod]
+
+# Ignore virtual environment directories
+venv/
+env/
+
+# Ignore environment variable files
+.env
+
+# Ignore data directory and its subdirectories
+app/data/
+
+# Ignore IDE-specific files
+.vscode/
+
+# Ignore logs
+*.log
+
+# Ignore generated files
+*.mp4
+*.mp3
+*.png
+
+# Ignore temporary files
+*.tmp
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore configuration files with sensitive information
+config.local.json
+
+# Ignore build artifacts
+build/
+dist/
+
+# Ignore package manager directories
+node_modules/
