@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from sqlalchemy.future import select
 from app.models.user import User  # Add this import at the top of the file
+from app.core.logging import logger
 
 async def init_db():
     async with engine.begin() as conn:
@@ -24,8 +25,8 @@ async def init_db():
                 )
                 session.add(admin_user)
                 await session.commit()
-                print(f"Created admin user: {admin_user.username}")
+                logger.info(f"Created admin user: {admin_user.username}")
             else:
-                print(f"Admin user already exists: {user.username}")
+                logger.info(f"Admin user already exists: {user.username}")
     else:
-        print("Admin credentials not provided. Skipping admin user creation.")
+        logger.warning("Admin credentials not provided. Skipping admin user creation.")

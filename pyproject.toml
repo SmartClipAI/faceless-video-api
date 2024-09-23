@@ -22,6 +22,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "python-jose>=3.3.0",
     "python-multipart>=0.0.9",
+    "pyyaml>=6.0.2",
     "replicate>=0.33.0",
     "ruff>=0.6.5",
     "socksio>=1.0.0",

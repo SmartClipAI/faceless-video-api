@@ -1,5 +1,5 @@
 import os
-from openai import AzureOpenAI
+from openai import AsyncAzureOpenAI
 from app.core.config import settings
 from app.services.story_generator import StoryGenerator
 from app.services.image_generator import ImageGenerator
@@ -7,16 +7,18 @@ from app.services.video_creator import VideoCreator
 from app.utils.helpers import create_resource_dir
 from app.models.video import VideoTask
 from app.constants.story_types import STORY_TYPES
+from app.services.image_api import huggingface_flux_api
+from app.core.logging import logger
 
 class VideoTaskProcessor:
     def __init__(self):
-        self.client = AzureOpenAI(
+        self.client = AsyncAzureOpenAI(
             azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
             api_key=settings.AZURE_OPENAI_API_KEY,
             api_version=settings.azure_api_version
         )
         self.story_generator = StoryGenerator(self.client)
-        self.image_generator = ImageGenerator()
+        self.image_generator = ImageGenerator(image_generator_func=huggingface_flux_api)
         self.video_creator = VideoCreator(self.client)
 
     async def process_video_generation_task(self, task_id: str, story_topic: str, image_style: str, duration: int, language: str, voice_name: str):
@@ -26,6 +28,7 @@ class VideoTaskProcessor:
         story_type = self.map_topic_to_story_type(story_topic)
         title, story = await self.story_generator.generate_story_and_title(story_type)
         if not title or not story:
+            logger.error("Failed to generate story and title")
             await task.update(status="Failed")
             return
 
@@ -39,6 +42,7 @@ class VideoTaskProcessor:
 
         storyboard_project = await self.story_generator.generate_storyboard(story_type, title, story, [c["name"] for c in characters])
         if not storyboard_project.get("storyboards"):
+            logger.error("Failed to generate storyboard")
             await task.update(status="Failed")
             return
 

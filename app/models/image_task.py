@@ -5,6 +5,7 @@ from app.db.session import async_session
 from typing import Optional, List
 from sqlalchemy.exc import SQLAlchemyError
 from app.db.base_class import Base  # Import Base from base_class, not from base
+from app.core.logging import logger
 
 class ImageTask(Base):
     __tablename__ = "image_tasks"
@@ -30,7 +31,7 @@ class ImageTask(Base):
                 await session.refresh(task)
             return task
         except SQLAlchemyError as e:
-            print(f"Error creating task: {e}")
+            logger.error(f"Error creating task: {e}")
             return None
 
     @classmethod

@@ -1,15 +1,16 @@
 import os
-import base64
-import requests
-import replicate
 import re
 from typing import Optional, Dict, Any, List, Callable
-from app.utils.helpers import create_blank_image
+from app.services.image_api import huggingface_flux_api, replicate_flux_api
 from app.core.config import settings
+from app.core.logging import logger
+from app.utils.helpers import create_blank_image
+import asyncio
+import time
 
 class ImageGenerator:
-    def __init__(self):
-        self.replicate_client = replicate.Client(api_token=settings.REPLICATE_API_KEY)
+    def __init__(self, image_generator_func: Callable[[str], Optional[bytes]] = None):
+        self.image_generator_func = image_generator_func 
 
     async def generate_image(
         self,
@@ -45,7 +46,7 @@ class ImageGenerator:
             ):
                 desc = f"{character['name']}'s appearance: {character['ethnicity']} {character['gender']} {character['age']} {character['facial_features']} {character['body_type']} {character['hair_style']} {character['accessories']}"
                 character_descriptions.append(desc)
-            
+
         if character_descriptions:
             enhanced_prompt += " | " + " | ".join(character_descriptions)
         
@@ -53,11 +54,11 @@ class ImageGenerator:
         enhanced_prompt = re.sub(r'\{\{.*?\}\}', '', enhanced_prompt)
         
         for character in character_descriptions:
-            print('---- character ----\n', character)
-        
-        print('---- prompt ----\n', enhanced_prompt)
+            logger.debug(f"Character description: {character}")
 
-        return await self._image_generator_func(enhanced_prompt)
+        logger.debug(f"Enhanced prompt: {enhanced_prompt}")
+
+        return await self.image_generator_func(enhanced_prompt)
 
     async def generate_and_download_images(
         self,
@@ -65,52 +66,55 @@ class ImageGenerator:
         story_dir: str,
         image_style: str
     ) -> List[str]:
+        start_time = time.time()
         image_files = []
-        characters = storyboard_project['characters']
-        
-        for i, storyboard in enumerate(storyboard_project['storyboards']):
-            image_content = await self.generate_image(storyboard, characters, image_style)
-            if image_content:
-                image_filename = os.path.join(story_dir, f"scene_{storyboard['scene_number']}.png")
-                storyboard['image'] = image_filename
-                try:
-                    with open(image_filename, 'wb') as f:
-                        f.write(image_content)
-                    image_files.append(image_filename)
-                    print(f"Image saved for scene {storyboard['scene_number']}")
-                except IOError as e:
-                    print(f"Failed to save image for scene {storyboard['scene_number']}: {e}")
-                    if i > 0:
-                        storyboard['image'] = image_files[-1]  # Use the previous image
+        tasks = []
+
+        try:
+            for i, storyboard in enumerate(storyboard_project['storyboards']):
+                image_filename = os.path.join(story_dir, f"image_{i+1}.png")
+                prompt = f"{image_style}. {storyboard['description']}"
+                
+                task = asyncio.create_task(self.generate_single_image(prompt, image_filename, storyboard, i+1))
+                tasks.append(task)
+
+            # wait for all tasks to complete
+            results = await asyncio.gather(*tasks)
+
+            for result, storyboard in zip(results, storyboard_project['storyboards']):
+                if result:
+                    image_filename, success = result
+                    if success:
+                        storyboard['image'] = image_filename
+                        image_files.append(image_filename)
                     else:
-                        # For the first image, create a blank image
+                        # if image generation fails, create a blank image
                         create_blank_image(image_filename)
                         storyboard['image'] = image_filename
                         image_files.append(image_filename)
-            else:
-                print(f"Failed to generate image for scene {storyboard['scene_number']}")
-                if i > 0:
-                    storyboard['image'] = image_files[-1]  # Use the previous image
-                else:
-                    # For the first image, create a blank image
-                    image_filename = os.path.join(story_dir, f"scene_{storyboard['scene_number']}.png")
-                    create_blank_image(image_filename)
-                    storyboard['image'] = image_filename
-                    image_files.append(image_filename)
+
+        except Exception as e:
+            logger.error(f"Error in generate_and_download_images: {e}")
+
+        finally:
+            end_time = time.time()
+            total_time = end_time - start_time
+            logger.info(f"generate_and_download_images completed in {total_time:.2f} seconds")
+            logger.info(f"Total images generated: {len(image_files)}")
+
         return image_files
 
-    async def _image_generator_func(self, prompt: str) -> Optional[bytes]:
+    async def generate_single_image(self, prompt: str, image_filename: str, storyboard: Dict[str, Any], image_number: int):
         try:
-            output = self.replicate_client.run(
-                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                input={"prompt": prompt}
-            )
-            if output and isinstance(output, list) and len(output) > 0:
-                image_url = output[0]
-                response = requests.get(image_url)
-                if response.status_code == 200:
-                    return response.content
-            return None
+            image_data = await self.image_generator_func(prompt)
+            if image_data:
+                with open(image_filename, "wb") as f:
+                    f.write(image_data)
+                logger.info(f"Image {image_number} generated successfully:")
+                return image_filename, True
+            else:
+                logger.warning(f"Failed to generate image {image_number}")
+                return image_filename, False
         except Exception as e:
-            print(f"Error generating image: {e}")
-            return None
+            logger.error(f"Error generating image {image_number}: {e}")
+            return image_filename, False

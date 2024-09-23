@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from app.schemas.image import ImageRequest, ImageResponse, ImageTaskStatus, ImageStatus
 from app.core.security import get_current_user
 from app.models.image_task import ImageTask
@@ -11,7 +11,7 @@ router = APIRouter()
 image_generator = ImageGenerator()
 image_task_processor = ImageTaskProcessor()
 
-@router.post("/images", response_model=ImageResponse)
+@router.post("/images", response_model=ImageResponse, status_code=status.HTTP_202_ACCEPTED)
 async def generate_story_images(
     request: ImageRequest,
     background_tasks: BackgroundTasks,

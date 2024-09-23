@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import async_session
 from typing import Optional
 from sqlalchemy.exc import SQLAlchemyError
+from app.core.logging import logger
 
 
 class VideoTask(Base):
@@ -26,7 +27,7 @@ class VideoTask(Base):
                 await session.refresh(task)
             return task
         except SQLAlchemyError as e:
-            print(f"Error creating task: {e}")
+            logger.error(f"Error creating task: {e}")
             return None
 
     @classmethod

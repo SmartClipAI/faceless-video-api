@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional, List
 from app.db.base_class import Base
 from app.db.session import async_session
+from app.core.logging import logger
 
 class Image(Base):
     __tablename__ = "images"
@@ -31,7 +32,7 @@ class Image(Base):
                 await session.refresh(image)
             return image
         except SQLAlchemyError as e:
-            print(f"Error creating image: {e}")
+            logger.error(f"Error creating image: {e}")
             return None
 
     @classmethod

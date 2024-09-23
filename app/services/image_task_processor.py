@@ -1,5 +1,5 @@
 from uuid import uuid4
-from openai import AzureOpenAI
+from openai import AsyncAzureOpenAI
 from app.models.image_task import ImageTask
 from app.models.image import Image
 from app.core.config import settings
@@ -7,16 +7,20 @@ from app.utils.helpers import create_resource_dir
 from app.services.story_generator import StoryGenerator
 from app.services.image_generator import ImageGenerator
 from app.constants.story_types import STORY_TYPES
+from app.services.image_api import huggingface_flux_api, replicate_flux_api
 
 class ImageTaskProcessor:
     def __init__(self):
-        self.client = AzureOpenAI(
+        self.client = AsyncAzureOpenAI(
             azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
             api_key=settings.AZURE_OPENAI_API_KEY,
             api_version=settings.azure_api_version
         )
         self.story_generator = StoryGenerator(self.client)
-        self.image_generator = ImageGenerator()
+        
+        # Choose the image generation function based on configuration
+        image_gen_func = huggingface_flux_api if settings.use_huggingface else replicate_flux_api
+        self.image_generator = ImageGenerator(image_generator_func=image_gen_func)
 
     async def process_image_generation_task(self, task_id: str, story_topic: str, art_style: str):
         task = await ImageTask.get(task_id)

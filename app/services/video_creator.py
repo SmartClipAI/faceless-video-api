@@ -16,7 +16,7 @@ class VideoCreator:
     def __init__(self, client):
         self.client = client
         self.audio_generator = AudioGenerator(client)
-        self.font_path = os.path.join(settings.BASE_DIR, "font")
+        self.font_path = os.path.join(settings.BASE_DIR, "resources/fonts")
 
     async def add_subtitles(self, output_file, output_file_subtitle):
         captacity.add_captions(

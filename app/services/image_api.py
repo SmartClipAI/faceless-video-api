@@ -1,25 +1,30 @@
-import os
-import time
+import asyncio
 import aiohttp
 import replicate
+import ssl
 from typing import Optional
 from app.core.config import settings
+from app.core.logging import logger
 
 async def huggingface_flux_api(prompt: str, max_retries: int = 3) -> Optional[bytes]:
-    HF_API_URL = settings.HUGGINGFACE_API_URL
+    HF_API_URL = settings.huggingface_flux_api.get('url')
     HF_HEADERS = {"Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}"}
 
     payload = {
         "inputs": prompt,
         "parameters": {
-            "width": settings.HUGGINGFACE_IMAGE_WIDTH,
-            "height": settings.HUGGINGFACE_IMAGE_HEIGHT,
-            "num_inference_steps": settings.HUGGINGFACE_NUM_INFERENCE_STEPS,
-            "guidance_scale": settings.HUGGINGFACE_GUIDANCE_SCALE,
+            "width": settings.huggingface_flux_api.get('width'),
+            "height": settings.huggingface_flux_api.get('height'),
+            "num_inference_steps": settings.huggingface_flux_api.get('num_inference_steps'),
+            "guidance_scale": settings.huggingface_flux_api.get('guidance_scale'),
         },
     }
 
-    async with aiohttp.ClientSession() as session:
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_context)) as session:
         for attempt in range(max_retries):
             try:
                 async with session.post(HF_API_URL, headers=HF_HEADERS, json=payload) as response:
@@ -27,11 +32,11 @@ async def huggingface_flux_api(prompt: str, max_retries: int = 3) -> Optional[by
                     return await response.read()
             except aiohttp.ClientError as e:
                 if attempt < max_retries - 1:
-                    print(f"Error in Hugging Face API request (attempt {attempt + 1}/{max_retries}): {e}")
-                    print("Retrying...")
+                    logger.warning(f"Error in Hugging Face API request (attempt {attempt + 1}/{max_retries}): {e}")
+                    logger.info("Retrying...")
                     await asyncio.sleep(1)  # Wait for 1 second before retrying
                 else:
-                    print(f"Error in Hugging Face API request after {max_retries} attempts: {e}")
+                    logger.error(f"Error in Hugging Face API request after {max_retries} attempts: {e}")
     return None
 
 async def replicate_flux_api(prompt: str, max_retries: int = 3) -> Optional[bytes]:
@@ -59,9 +64,9 @@ async def replicate_flux_api(prompt: str, max_retries: int = 3) -> Optional[byte
                 raise ValueError("No image URL returned from Replicate API")
         except Exception as e:
             if attempt < max_retries - 1:
-                print(f"Error in Flux Schnell generation (attempt {attempt + 1}/{max_retries}): {e}")
-                print("Retrying...")
+                logger.warning(f"Error in Flux Schnell generation (attempt {attempt + 1}/{max_retries}): {e}")
+                logger.info("Retrying...")
                 await asyncio.sleep(1)  # Wait for 1 second before retrying
             else:
-                print(f"Error in Flux Schnell generation after {max_retries} attempts: {e}")
+                logger.error(f"Error in Flux Schnell generation after {max_retries} attempts: {e}")
     return None

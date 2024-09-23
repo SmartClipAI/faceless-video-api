@@ -6,6 +6,7 @@ import json
 import re
 from app.utils.helpers import call_azure_openai_api, create_empty_storyboard
 from app.core.config import settings
+from app.core.logging import logger
 
 class StoryGenerator:
     def __init__(self, client):
@@ -13,7 +14,7 @@ class StoryGenerator:
         self.config = settings
 
     async def generate_story_and_title(self, story_type: str) -> Tuple[str, str]:
-        char_limit = (self.config.story_generation['char_limit_min'], self.config.story_generation['char_limit_max'])
+        char_limit = (self.config.story_generation.get('char_limit_min', 700), self.config.story_generation.get('char_limit_max', 800))
         prompt = self._get_prompt(story_type, char_limit)
         messages = [
             {
@@ -126,7 +127,7 @@ class StoryGenerator:
 
         response = await call_azure_openai_api(self.client, messages)
         if not response:
-            print("API returned empty response")
+            logger.error("API returned empty response")
         
         try:
             return json.loads(response)
@@ -137,10 +138,10 @@ class StoryGenerator:
                 try:
                     return json.loads(array_match.group())
                 except json.JSONDecodeError:
-                    print("Failed to parse the response as a JSON array.")
+                    logger.error("Failed to parse the response as a JSON array.")
                     return []
             else:
-                print("No JSON array found in the response.")
+                logger.error("No JSON array found in the response.")
                 return []
 
     async def generate_storyboard(self, story_type: str, title: str, story: str, character_names: List[str]) -> Dict[str, Any]:
@@ -320,7 +321,7 @@ class StoryGenerator:
             '''
 
     async def _generate_life_pro_tips_storyboard(self, title: str, story: str) -> Dict[str, Any]:
-        max_scenes = self.config['storyboard']['max_scenes']
+        max_scenes = self.config.storyboard.get('max_scenes', 12)
         timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
         
         prompt = f"""Based on the following life pro tip, create a detailed storyboard with up to {max_scenes} scenes.
@@ -427,7 +428,7 @@ class StoryGenerator:
 
         response = await call_azure_openai_api(self.client, messages)
         if not response:
-            print("API returned empty response")
+            logger.error("API returned empty response")
             return create_empty_storyboard(title)
         
         # Find the JSON part of the response
@@ -438,16 +439,16 @@ class StoryGenerator:
                 storyboard_data = json.loads(json_str)
                 return storyboard_data
             except json.JSONDecodeError as e:
-                print(f"JSON Decode Error: {e}")
-                logging.error(f"Failed to parse JSON: {json_str}")
+                logger.error(f"JSON Decode Error: {e}")
+                logger.error(f"Failed to parse JSON: {json_str}")
                 return create_empty_storyboard(title)
         else:
-            print("No JSON object found in the response")
-            logging.error(f"Full response: {response}")
+            logger.error("No JSON object found in the response")
+            logger.error(f"Full response: {response}")
             return create_empty_storyboard(title)
 
     async def _generate_philosophy_storyboard(self, title: str, story: str, character_names: List[str]) -> Dict[str, Any]:
-        max_scenes = self.config['storyboard']['max_scenes']
+        max_scenes = self.config.storyboard.get('max_scenes', 12)
         timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
         
         prompt = f"""Based on the following philosophical story or dialogue, create a detailed storyboard with up to {max_scenes} scenes.
@@ -561,7 +562,7 @@ class StoryGenerator:
 
         response = await call_azure_openai_api(self.client, messages)
         if not response:
-            print("API returned empty response")
+            logger.error("API returned empty response")
             return create_empty_storyboard(title)
 
         # Find the JSON part of the response
@@ -572,16 +573,16 @@ class StoryGenerator:
                 storyboard_data = json.loads(json_str)
                 return storyboard_data
             except json.JSONDecodeError as e:
-                print(f"JSON Decode Error: {e}")
-                logging.error(f"Failed to parse JSON: {json_str}")
+                logger.error(f"JSON Decode Error: {e}")
+                logger.error(f"Failed to parse JSON: {json_str}")
                 return create_empty_storyboard(title)
         else:
-            print("No JSON object found in the response")
-            logging.error(f"Full response: {response}")
+            logger.error("No JSON object found in the response")
+            logger.error(f"Full response: {response}")
             return create_empty_storyboard(title)
 
     async def _generate_fun_facts_storyboard(self, title: str, story: str) -> Dict[str, Any]:
-        max_scenes = self.config['storyboard']['max_scenes']
+        max_scenes = self.config.storyboard.get('max_scenes', 12)
         timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
         
         prompt = f"""Based on the following fun fact, create a detailed storyboard with up to {max_scenes} scenes.
@@ -687,7 +688,7 @@ class StoryGenerator:
 
         response = await call_azure_openai_api(self.client, messages)
         if not response:
-            print("API returned empty response")
+            logger.error("API returned empty response")
             return create_empty_storyboard(title)
         
         # Find the JSON part of the response
@@ -698,16 +699,16 @@ class StoryGenerator:
                 storyboard_data = json.loads(json_str)
                 return storyboard_data
             except json.JSONDecodeError as e:
-                print(f"JSON Decode Error: {e}")
-                logging.error(f"Failed to parse JSON: {json_str}")
+                logger.error(f"JSON Decode Error: {e}")
+                logger.error(f"Failed to parse JSON: {json_str}")
                 return create_empty_storyboard(title)
         else:
-            print("No JSON object found in the response")
-            logging.error(f"Full response: {response}")
+            logger.error("No JSON object found in the response")
+            logger.error(f"Full response: {response}")
             return create_empty_storyboard(title)
 
     async def _generate_general_storyboard(self, title: str, story: str, character_names: List[str]) -> Dict[str, Any]:
-        max_scenes = self.config['storyboard']['max_scenes']
+        max_scenes = self.config.storyboard.get('max_scenes', 12)
         timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
 
         prompt = f"""Based on the following story, create a detailed storyboard with up to {max_scenes} scenes.
@@ -831,7 +832,7 @@ class StoryGenerator:
 
         response = await call_azure_openai_api(self.client, messages)
         if not response:
-            print("API returned empty response")
+            logger.error("API returned empty response")
             return create_empty_storyboard(title)
         
         # Find the JSON part of the response
@@ -842,12 +843,12 @@ class StoryGenerator:
                 storyboard_data = json.loads(json_str)
                 return storyboard_data
             except json.JSONDecodeError as e:
-                print(f"JSON Decode Error: {e}")
-                logging.error(f"Failed to parse JSON: {json_str}")
+                logger.error(f"JSON Decode Error: {e}")
+                logger.error(f"Failed to parse JSON: {json_str}")
                 return create_empty_storyboard(title)
         else:
-            print("No JSON object found in the response")
-            logging.error(f"Full response: {response}")
+            logger.error("No JSON object found in the response")
+            logger.error(f"Full response: {response}")
             return create_empty_storyboard(title)
 
 

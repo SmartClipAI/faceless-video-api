@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from typing import Dict, Any
 from PIL import Image
+from app.core.logging import logger
 
 
 def create_resource_dir(base_dir: str, story_type: str, title: str) -> str:
@@ -20,7 +21,7 @@ async def call_azure_openai_api(client, messages):
         )
         return response.choices[0].message.content
     except Exception as e:
-        print(f"Error calling Azure OpenAI API: {e}")
+        logger.error(f"Error calling Azure OpenAI API: {e}")
         return None
 
 def create_empty_storyboard(title: str) -> Dict[str, Any]:
@@ -36,4 +37,4 @@ def create_empty_storyboard(title: str) -> Dict[str, Any]:
 def create_blank_image(filename, width=720, height=1280):
     blank_image = Image.new('RGB', (width, height), color='black')
     blank_image.save(filename)
-    print(f"Created blank image: {filename}")
+    logger.info(f"Created blank image: {filename}")

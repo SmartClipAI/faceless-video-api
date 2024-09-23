@@ -9,6 +9,8 @@ class StorageService:
 
     async def upload_to_r2(self, file_path, object_name):
         # Implement R2 upload logic
+        pass
 
     async def save_to_database(self, data):
         # Implement Database save logic
+        pass
