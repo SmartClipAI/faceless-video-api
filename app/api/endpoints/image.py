@@ -22,7 +22,7 @@ async def generate_story_images(
     background_tasks.add_task(image_task_processor.process_image_generation_task, task_id, request.story_topic, request.art_style)
     return ImageResponse(task_id=task_id, status="Queued")
 
-@router.get("/images/tasks/{task_id}", response_model=ImageTaskStatus)
+@router.get("/images/tasks/{task_id}/status", response_model=ImageTaskStatus)
 async def get_task_status(task_id: str, current_user: dict = Depends(get_current_user)):
     task = await ImageTask.get(task_id)
     if not task:
@@ -62,7 +62,7 @@ async def regenerate_image(
     background_tasks.add_task(image_generator.regenerate_image, new_task_id, image_id)
     return ImageResponse(task_id=new_task_id, status="Queued")
 
-@router.get("/images/{image_id}", response_model=ImageStatus)
+@router.get("/images/{image_id}/status", response_model=ImageStatus)
 async def get_image_status(image_id: str, current_user: dict = Depends(get_current_user)):
     image = await Image.get(image_id)
     if not image:

@@ -24,6 +24,13 @@
       "guidance": 3.5,
       "output_quality": 100
     },
+    "fal_flux_api": {
+      "model": "fal-ai/flux/schnell",
+      "image_size": "portrait_16_9",
+      "num_inference_steps": 4,
+      "enable_safety_checker": false,
+      "num_images": 1
+    },
     "tts": {
       "speech_rate": 1.1
     },

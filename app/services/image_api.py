@@ -70,3 +70,65 @@ async def replicate_flux_api(prompt: str, max_retries: int = 3) -> Optional[byte
             else:
                 logger.error(f"Error in Flux Schnell generation after {max_retries} attempts: {e}")
     return None
+
+async def fal_flux_api(task_id: str, prompt: str, seed: int = 6252023, image_size: str = "landscape_4_3", num_images: int = 1):
+    try:
+        # Submit the task to fal.ai
+        handler = await fal_client.submit_async(
+            "fal-ai/flux/dev",
+            arguments={
+                "prompt": prompt,
+                "seed": seed,
+                "image_size": image_size,
+                "num_images": num_images
+            },
+        )
+
+        # Update task status to "processing"
+        await ImageTask.update(task_id, status="processing")
+
+        log_index = 0
+        async for event in handler.iter_events(with_logs=True):
+            if isinstance(event, fal_client.InProgress):
+                new_logs = event.logs[log_index:]
+                for log in new_logs:
+                    logger.info(f"Task {task_id}: {log['message']}")
+                log_index = len(event.logs)
+                
+                # Update task progress (assuming the logs contain progress information)
+                progress = len(event.logs) / 10  # This is a placeholder, adjust based on actual log structure
+                await ImageTask.update(task_id, progress=progress)
+
+        # Get the final result
+        result = await handler.get()
+        
+        # Update task with the result
+        image_urls = [image['url'] for image in result.get('images', [])]
+        await ImageTask.update(task_id, status="completed", images=image_urls)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error in fal_flux_api for task {task_id}: {str(e)}")
+        await ImageTask.update(task_id, status="failed")
+        raise
+
+async def process_image_task(task_id: str):
+    task = await ImageTask.get(task_id)
+    if not task:
+        logger.error(f"Task {task_id} not found")
+        return
+
+    try:
+        result = await fal_flux_api(
+            task_id=task.id,
+            prompt=f"{task.story_topic} in {task.art_style} style",
+            num_images=1  # Adjust as needed
+        )
+        logger.info(f"Task {task_id} completed successfully")
+    except Exception as e:
+        logger.error(f"Failed to process task {task_id}: {str(e)}")
+        await ImageTask.update(task_id, status="failed")
+
+if __name__ == "__main__":
+    asyncio.run(process_image_task("your_task_id_here"))
