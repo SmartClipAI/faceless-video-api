@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,10 +13,10 @@ class Image(Base):
     __tablename__ = "images"
 
     id = Column(String, primary_key=True, index=True)
-    task_id = Column(String, ForeignKey("image_tasks.id"), nullable=False)
-    url = Column(String)
+    task_id = Column(String, ForeignKey("image_tasks.id"), nullable=False, index=True)
+    url = Column(String, nullable=False)
     subtitles = Column(Text)
-    status = Column(String, index=True, nullable=False)
+    status = Column(Enum('queued', 'processing', 'completed', 'failed', name='image_status'), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

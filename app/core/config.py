@@ -33,17 +33,19 @@ class Settings(BaseSettings):
     story_generation: dict | None = None
     storyboard: dict | None = None
     azure_openai: dict | None = None
-    huggingface_flux_api: dict | None = None
+    fal_flux_dev_api: dict | None = None
+    fal_flux_schnell_api: dict | None = None
     replicate_flux_api: dict | None = None
     tts: dict | None = None
     azure_api_version: str | None = None
-    use_huggingface: bool | None = None
+    use_fal_flux: bool | None = None
+
 
     @field_validator('STORY_DIR', mode='before')
     def set_story_dir(cls, v, info):
         return v or os.path.join(os.path.dirname(info.data.get('BASE_DIR', '')), "data")
 
-    @field_validator('story_generation', 'storyboard', 'azure_openai', 'huggingface_flux_api', 'replicate_flux_api', 'tts', 'azure_api_version', 'use_huggingface', mode='before')
+    @field_validator('story_generation', 'storyboard', 'azure_openai', 'fal_flux_dev_api', 'fal_flux_schnell_api', 'replicate_flux_api', 'tts', 'azure_api_version', 'use_fal_flux', mode='before')
     def load_json_config(cls, v, info):
         if v is None or (isinstance(v, (str, dict)) and not v):
             config_path = os.path.join(os.path.dirname(info.data.get('BASE_DIR', '')), 'config.json')

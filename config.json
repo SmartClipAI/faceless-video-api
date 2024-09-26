@@ -10,13 +10,6 @@
       "model": "gpt-4o",
       "temperature": 0.9
     },
-    "huggingface_flux_api": {
-      "url": "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
-      "width": 720,
-      "height": 1280,
-      "num_inference_steps": 28,
-      "guidance_scale": 3.5
-    },
     "replicate_flux_api": {
       "model": "black-forest-labs/flux-dev",
       "aspect_ratio": "9:16",
@@ -24,10 +17,17 @@
       "guidance": 3.5,
       "output_quality": 100
     },
-    "fal_flux_api": {
+    "fal_flux_dev_api": {
+      "model": "fal-ai/flux/dev",
+      "image_size": "portrait_16_9",
+      "num_inference_steps": 28,
+      "guidance_scale": 3.5,
+      "enable_safety_checker": false,
+      "num_images": 1
+    },
+    "fal_flux_schnell_api": {
       "model": "fal-ai/flux/schnell",
       "image_size": "portrait_16_9",
-      "num_inference_steps": 4,
       "enable_safety_checker": false,
       "num_images": 1
     },
@@ -35,5 +35,5 @@
       "speech_rate": 1.1
     },
     "azure_api_version": "2024-05-01-preview",
-    "use_huggingface": true
+    "use_fal_flux": true
 }

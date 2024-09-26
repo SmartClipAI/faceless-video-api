@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, Text, select 
+from sqlalchemy import Column, String, Float, DateTime, Text, select, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import async_session
@@ -7,13 +7,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.db.base_class import Base  # Import Base from base_class, not from base
 from app.core.logging import logger
 
+
 class ImageTask(Base):
     __tablename__ = "image_tasks"
 
     id = Column(String, primary_key=True, index=True)
     story_topic = Column(String, nullable=False)
     art_style = Column(String, nullable=False)
-    status = Column(String, index=True, nullable=False)
+    status = Column(Enum('queued', 'processing', 'completed', 'failed', name='task_status'), nullable=False, index=True)
     progress = Column(Float, default=0.0)
     story_text = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

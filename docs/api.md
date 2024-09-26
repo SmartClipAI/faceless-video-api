@@ -293,7 +293,7 @@ Retrieves the status of a specific story image generation task, including the st
 | Field | Type | Description |
 |-------|------|-------------|
 | task_id | string | Unique identifier for the story image generation task |
-| status | string | Current status of the task (e.g., "processing", "completed", "failed") |
+| status | string | Current status of the task (e.g., "queued", "processing", "completed", "failed") |
 | created_at | string | ISO 8601 timestamp of when the task was created |
 | updated_at | string | ISO 8601 timestamp of when the task was updated |
 | story_text | string | The generated story text (null if not completed) |

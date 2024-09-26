@@ -7,7 +7,7 @@ from app.services.video_creator import VideoCreator
 from app.utils.helpers import create_resource_dir
 from app.models.video import VideoTask
 from app.constants.story_types import STORY_TYPES
-from app.services.image_api import huggingface_flux_api
+from app.services.image_api import fal_flux_api, replicate_flux_api
 from app.core.logging import logger
 
 class VideoTaskProcessor:
@@ -18,7 +18,8 @@ class VideoTaskProcessor:
             api_version=settings.azure_api_version
         )
         self.story_generator = StoryGenerator(self.client)
-        self.image_generator = ImageGenerator(image_generator_func=huggingface_flux_api)
+        image_gen_func = fal_flux_api if settings.use_fal_flux else replicate_flux_api
+        self.image_generator = ImageGenerator(image_generator_func=image_gen_func)
         self.video_creator = VideoCreator(self.client)
 
     async def process_video_generation_task(self, task_id: str, story_topic: str, image_style: str, duration: int, language: str, voice_name: str):

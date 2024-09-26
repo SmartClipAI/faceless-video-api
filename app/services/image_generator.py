@@ -1,7 +1,7 @@
 import os
 import re
 from typing import Optional, Dict, Any, List, Callable
-from app.services.image_api import huggingface_flux_api, replicate_flux_api
+from app.services.image_api import fal_flux_api, replicate_flux_api
 from app.core.config import settings
 from app.core.logging import logger
 from app.utils.helpers import create_blank_image
@@ -62,6 +62,7 @@ class ImageGenerator:
 
     async def generate_and_download_images(
         self,
+        task_id: str,
         storyboard_project: Dict[str, Any],
         story_dir: str,
         image_style: str
@@ -75,7 +76,7 @@ class ImageGenerator:
                 image_filename = os.path.join(story_dir, f"image_{i+1}.png")
                 prompt = f"{image_style}. {storyboard['description']}"
                 
-                task = asyncio.create_task(self.generate_single_image(prompt, image_filename, storyboard, i+1))
+                task = asyncio.create_task(self.generate_single_image(task_id, prompt, image_filename, storyboard, i+1))
                 tasks.append(task)
 
             # wait for all tasks to complete
@@ -88,7 +89,7 @@ class ImageGenerator:
                         storyboard['image'] = image_filename
                         image_files.append(image_filename)
                     else:
-                        # if image generation fails, create a blank image
+                        # TODO: use a placeholder image
                         create_blank_image(image_filename)
                         storyboard['image'] = image_filename
                         image_files.append(image_filename)
@@ -104,13 +105,13 @@ class ImageGenerator:
 
         return image_files
 
-    async def generate_single_image(self, prompt: str, image_filename: str, storyboard: Dict[str, Any], image_number: int):
+    async def generate_single_image(self, task_id: str, prompt: str, image_filename: str, storyboard: Dict[str, Any], image_number: int):
         try:
-            image_data = await self.image_generator_func(prompt)
+            image_data = await self.image_generator_func(task_id, prompt)
             if image_data:
                 with open(image_filename, "wb") as f:
                     f.write(image_data)
-                logger.info(f"Image {image_number} generated successfully:")
+                logger.info(f"Image {image_number} generated successfully: {image_filename}")
                 return image_filename, True
             else:
                 logger.warning(f"Failed to generate image {image_number}")

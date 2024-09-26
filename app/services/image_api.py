@@ -5,41 +5,14 @@ import ssl
 from typing import Optional
 from app.core.config import settings
 from app.core.logging import logger
+import fal_client
+from app.models.image_task import ImageTask  # Make sure this import is at the top of the file
 
-async def huggingface_flux_api(prompt: str, max_retries: int = 3) -> Optional[bytes]:
-    HF_API_URL = settings.huggingface_flux_api.get('url')
-    HF_HEADERS = {"Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}"}
 
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "width": settings.huggingface_flux_api.get('width'),
-            "height": settings.huggingface_flux_api.get('height'),
-            "num_inference_steps": settings.huggingface_flux_api.get('num_inference_steps'),
-            "guidance_scale": settings.huggingface_flux_api.get('guidance_scale'),
-        },
-    }
+async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) -> Optional[bytes]:
+    # Update task status to "processing"
+    await ImageTask.update(task_id, status="processing")
 
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
-
-    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_context)) as session:
-        for attempt in range(max_retries):
-            try:
-                async with session.post(HF_API_URL, headers=HF_HEADERS, json=payload) as response:
-                    response.raise_for_status()
-                    return await response.read()
-            except aiohttp.ClientError as e:
-                if attempt < max_retries - 1:
-                    logger.warning(f"Error in Hugging Face API request (attempt {attempt + 1}/{max_retries}): {e}")
-                    logger.info("Retrying...")
-                    await asyncio.sleep(1)  # Wait for 1 second before retrying
-                else:
-                    logger.error(f"Error in Hugging Face API request after {max_retries} attempts: {e}")
-    return None
-
-async def replicate_flux_api(prompt: str, max_retries: int = 3) -> Optional[bytes]:
     payload = {
         "prompt": prompt,
         "aspect_ratio": settings.REPLICATE_ASPECT_RATIO,
@@ -59,7 +32,10 @@ async def replicate_flux_api(prompt: str, max_retries: int = 3) -> Optional[byte
                 async with aiohttp.ClientSession() as session:
                     async with session.get(image_url) as response:
                         response.raise_for_status()
-                        return await response.read()
+                        image_data = await response.read()
+                        # Update task status to "completed" and save the image data
+                        await ImageTask.update(task_id, status="completed", image=image_data)
+                        return image_data
             else:
                 raise ValueError("No image URL returned from Replicate API")
         except Exception as e:
@@ -69,49 +45,63 @@ async def replicate_flux_api(prompt: str, max_retries: int = 3) -> Optional[byte
                 await asyncio.sleep(1)  # Wait for 1 second before retrying
             else:
                 logger.error(f"Error in Flux Schnell generation after {max_retries} attempts: {e}")
+                # Update task status to "failed" if all attempts fail
+                await ImageTask.update(task_id, status="failed", error_message=str(e))
     return None
 
-async def fal_flux_api(task_id: str, prompt: str, seed: int = 6252023, image_size: str = "landscape_4_3", num_images: int = 1):
-    try:
-        # Submit the task to fal.ai
-        handler = await fal_client.submit_async(
-            "fal-ai/flux/dev",
-            arguments={
-                "prompt": prompt,
-                "seed": seed,
-                "image_size": image_size,
-                "num_images": num_images
-            },
-        )
 
-        # Update task status to "processing"
-        await ImageTask.update(task_id, status="processing")
+async def fal_flux_api(task_id: str, prompt: str, max_retries: int = 3):
+    # Update task status to "processing"
+    await ImageTask.update(task_id, status="processing")
 
-        log_index = 0
-        async for event in handler.iter_events(with_logs=True):
-            if isinstance(event, fal_client.InProgress):
-                new_logs = event.logs[log_index:]
-                for log in new_logs:
-                    logger.info(f"Task {task_id}: {log['message']}")
-                log_index = len(event.logs)
-                
-                # Update task progress (assuming the logs contain progress information)
-                progress = len(event.logs) / 10  # This is a placeholder, adjust based on actual log structure
-                await ImageTask.update(task_id, progress=progress)
+    for attempt in range(max_retries):
+        try:
+            # Submit the task to fal.ai
+            if settings.use_fal_flux_dev:
+                handler = await fal_client.submit_async(
+                    model=settings.fal_flux_dev_api.get('model'),
+                    arguments={
+                        "prompt": prompt,
+                        "image_size": settings.fal_flux_dev_api.get('image_size'),
+                        "num_inference_steps": settings.fal_flux_dev_api.get('num_inference_steps'),
+                        "guidance_scale": settings.fal_flux_dev_api.get('guidance_scale'),
+                        "enable_safety_checker": settings.fal_flux_dev_api.get('enable_safety_checker'),
+                        "num_images": settings.fal_flux_dev_api.get('num_images')
+                    },
+                )
+            else:
+                handler = await fal_client.submit_async(
+                    model=settings.fal_flux_schnell_api.get('model'),
+                    arguments={
+                        "prompt": prompt,
+                        "image_size": settings.fal_flux_schnell_api.get('image_size'),
+                        "guidance_scale": settings.fal_flux_schnell_api.get('guidance_scale'),
+                        "enable_safety_checker": settings.fal_flux_schnell_api.get('enable_safety_checker'),
+                        "num_images": settings.fal_flux_schnell_api.get('num_images')
+                    },
+                )
 
-        # Get the final result
-        result = await handler.get()
-        
-        # Update task with the result
-        image_urls = [image['url'] for image in result.get('images', [])]
-        await ImageTask.update(task_id, status="completed", images=image_urls)
+            # Get the final result
+            result = await handler.get()
+            
+            # Update task with the result
+            image_urls = [image['url'] for image in result.get('images', [])]
+            await ImageTask.update(task_id, status="completed", images=image_urls)
 
-        return result
+            return result
 
-    except Exception as e:
-        logger.error(f"Error in fal_flux_api for task {task_id}: {str(e)}")
-        await ImageTask.update(task_id, status="failed")
-        raise
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"Error in fal_flux_api (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                logger.info("Retrying...")
+                await asyncio.sleep(1)  # Wait for 1 second before retrying
+            else:
+                logger.error(f"Error in fal_flux_api after {max_retries} attempts: {str(e)}")
+                # Update task status to "failed" if all attempts fail
+                await ImageTask.update(task_id, status="failed", error_message=str(e))
+                raise
+
+    return None
 
 async def process_image_task(task_id: str):
     task = await ImageTask.get(task_id)

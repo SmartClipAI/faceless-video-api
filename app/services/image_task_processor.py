@@ -7,7 +7,7 @@ from app.utils.helpers import create_resource_dir
 from app.services.story_generator import StoryGenerator
 from app.services.image_generator import ImageGenerator
 from app.constants.story_types import STORY_TYPES
-from app.services.image_api import huggingface_flux_api, replicate_flux_api
+from app.services.image_api import fal_flux_api, replicate_flux_api
 
 class ImageTaskProcessor:
     def __init__(self):
@@ -19,7 +19,7 @@ class ImageTaskProcessor:
         self.story_generator = StoryGenerator(self.client)
         
         # Choose the image generation function based on configuration
-        image_gen_func = huggingface_flux_api if settings.use_huggingface else replicate_flux_api
+        image_gen_func = fal_flux_api if settings.use_fal_flux else replicate_flux_api
         self.image_generator = ImageGenerator(image_generator_func=image_gen_func)
 
     async def process_image_generation_task(self, task_id: str, story_topic: str, art_style: str):
@@ -49,10 +49,11 @@ class ImageTaskProcessor:
 
         storyboard_project["characters"] = characters
 
-        image_files = await self.image_generator.generate_and_download_images(storyboard_project, story_dir, art_style)
+        image_files = await self.image_generator.generate_and_download_images(task_id, storyboard_project, story_dir, art_style)
 
         await task.update(task_id=task_id, progress=0.8)
 
+        # save images to database
         if image_files:
             for i, image_file in enumerate(image_files):
                 image_url = f"/static/stories/{story_type}/{title}/scene_{i+1}.png"
