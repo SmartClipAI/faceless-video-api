@@ -1,9 +1,12 @@
 import re
 from typing import Optional, Dict, Any, List, Callable
+from datetime import datetime
 from app.services.image_api import fal_flux_api, replicate_flux_api
 from app.core.config import settings
 from app.core.logging import logger
 from app.utils.helpers import create_blank_image
+from app.models.image import Image
+from app.models.image_task import ImageTask
 import asyncio
 import time
 
@@ -110,3 +113,29 @@ class ImageGenerator:
         logger.info(f"Total images generated for task {task_id}: {len(image_urls)}")
 
         return image_urls
+
+    async def regenerate_image(self, task_id: str, image_id: str) -> Optional[str]:
+        # Get the original image
+        image = await Image.get(image_id)
+        if not image:
+            logger.error(f"Image not found: {image_id}")
+            return None
+
+        # Generate a new image using the prompt
+        image_url = await self.image_generator_func(task_id, image.enhanced_prompt)
+
+        current_time = datetime.now()
+
+        if image_url:
+            # Update the image with the new URL and status
+            await Image.update(image_id, url=image_url, status="completed", updated_at=current_time)
+            logger.info(f"Image regenerated successfully for task {task_id}, image {image_id}")
+        else:
+            # Update the image status to failed if generation was unsuccessful
+            await Image.update(image_id, status="failed", updated_at=current_time)
+            logger.error(f"Failed to regenerate image for task {task_id}, image {image_id}")
+
+        # Update the image_task's updated_at field
+        await ImageTask.update(task_id, updated_at=current_time)
+
+        return image_url

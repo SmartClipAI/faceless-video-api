@@ -10,6 +10,13 @@ class ImageResponse(BaseModel):
     task_id: str
     status: str
 
+class RegenerateImageResponse(BaseModel):
+    task_id: str
+    url: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
 class ImageStatus(BaseModel):
     id: str
     status: str

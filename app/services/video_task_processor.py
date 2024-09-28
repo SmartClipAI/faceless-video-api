@@ -19,7 +19,7 @@ class VideoTaskProcessor:
         )
         self.story_generator = StoryGenerator(self.client)
         image_gen_func = fal_flux_api if settings.use_fal_flux else replicate_flux_api
-        self.image_generator = ImageGenerator(image_generator_func=image_gen_func)
+        # self.image_generator = ImageGenerator(image_generator_func=image_gen_func)
         self.video_creator = VideoCreator(self.client)
 
     async def process_video_generation_task(self, task_id: str, story_topic: str, image_style: str, duration: int, language: str, voice_name: str):

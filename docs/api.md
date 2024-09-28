@@ -391,22 +391,27 @@ No request body is required for this endpoint.
 
 ```json
 {
-    "image_id": "string",
+    "id": "string",
     "status": "string",
-    "created_at": "string"
+    "url": "string",
+    "created_at": "string",
+    "updated_at": "string"
 }
 
 ###### Response Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| image_id | integer | Unique identifier of the original image |
+| id | integer | Unique identifier of the original image |
 | status | string |  Status of the image (e.g., "processing", "completed", "failed") |
+| url | string | URL of the regenerated image |
 | created_at | string | ISO 8601 timestamp of when the regeneration task was created |
+| updated_at | string | ISO 8601 timestamp of when the regeneration task was updated |
+
 
 ###### Error Response
 
-- **Status Code**: 404 Not Found
+- **Status Code**: 200 OK
 - **Content-Type**: application/json
 
 ```json
@@ -429,9 +434,11 @@ curl -X POST https://api.example.com/v1/images/img_003ghi \
 
 ```json
 {
-    "image_id": "img_003ghi",
-    "status_url": "/images/img_003ghi",
-    "created_at": "2023-04-02T10:30:00Z"
+    "task_id": "task_7890xyz",
+    "url": "/images/img_003ghi",
+    "status": "completed", 
+    "created_at": "2024-09-28T00:05:36.865510Z", 
+    "updated_at": "2024-09-28T06:36:17.891279Z"
 }
 ```
 
