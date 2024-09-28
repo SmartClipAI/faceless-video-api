@@ -28,6 +28,7 @@
     "fal_flux_schnell_api": {
       "model": "fal-ai/flux/schnell",
       "image_size": "portrait_16_9",
+      "guidance_scale": 3.5,
       "enable_safety_checker": false,
       "num_images": 1
     },
@@ -35,5 +36,6 @@
       "speech_rate": 1.1
     },
     "azure_api_version": "2024-05-01-preview",
-    "use_fal_flux": true
+    "use_fal_flux": true,
+    "use_fal_flux_dev": false
 }

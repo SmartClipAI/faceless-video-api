@@ -14,8 +14,10 @@ class Image(Base):
 
     id = Column(String, primary_key=True, index=True)
     task_id = Column(String, ForeignKey("image_tasks.id"), nullable=False, index=True)
-    url = Column(String, nullable=False)
+    url = Column(String)
     subtitles = Column(Text)
+    enhanced_prompt = Column(Text)
+    error_message = Column(Text)
     status = Column(Enum('queued', 'processing', 'completed', 'failed', name='image_status'), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -39,7 +39,9 @@ async def get_task_status(task_id: str, current_user: dict = Depends(get_current
             id=image.id,
             status=image.status,
             url=image.url,
-            subtitles=image.subtitles
+            subtitles=image.subtitles,
+            created_at=image.created_at,
+            updated_at=image.updated_at if image.updated_at else None
         ) for image in images]
     )
 

@@ -1,4 +1,3 @@
-import os
 import re
 from typing import Optional, Dict, Any, List, Callable
 from app.services.image_api import fal_flux_api, replicate_flux_api
@@ -9,15 +8,16 @@ import asyncio
 import time
 
 class ImageGenerator:
-    def __init__(self, image_generator_func: Callable[[str], Optional[bytes]] = None):
+    def __init__(self, image_generator_func: Callable[[str], Optional[str]] = None):
         self.image_generator_func = image_generator_func 
 
-    async def generate_image(
+    async def prepare_and_generate_image(
         self,
+        task_id: str,
         storyboard: Dict[str, Any],
         characters: List[Dict[str, Any]],
         style: str
-    ) -> Optional[bytes]:
+    ) -> Optional[str]:
         # Construct the prompt
         prompt = storyboard['description']
         camera_info = f"Camera: {storyboard['camera']['angle']}, {storyboard['camera']['composition_type']}, {storyboard['camera']['shot_size']}"
@@ -53,69 +53,60 @@ class ImageGenerator:
         # Remove all bracketed content
         enhanced_prompt = re.sub(r'\{\{.*?\}\}', '', enhanced_prompt)
         
-        for character in character_descriptions:
-            logger.debug(f"Character description: {character}")
+        logger.debug(f"Enhanced prompt for task {task_id}: {enhanced_prompt}")
 
-        logger.debug(f"Enhanced prompt: {enhanced_prompt}")
+        image_url = await self.image_generator_func(task_id, enhanced_prompt)
+        
+        if image_url:
+            logger.info(f"Image generated successfully for task {task_id}")
+        else:
+            logger.error(f"Failed to generate image for task {task_id}")
 
-        return await self.image_generator_func(enhanced_prompt)
+        return image_url, enhanced_prompt
 
-    async def generate_and_download_images(
-        self,
-        task_id: str,
-        storyboard_project: Dict[str, Any],
-        story_dir: str,
-        image_style: str
-    ) -> List[str]:
+    async def generate_images(self, task_id: str, storyboard_project: Dict[str, Any], art_style: str) -> List[str]:
         start_time = time.time()
-        image_files = []
         tasks = []
 
-        try:
-            for i, storyboard in enumerate(storyboard_project['storyboards']):
-                image_filename = os.path.join(story_dir, f"image_{i+1}.png")
-                prompt = f"{image_style}. {storyboard['description']}"
-                
-                task = asyncio.create_task(self.generate_single_image(task_id, prompt, image_filename, storyboard, i+1))
-                tasks.append(task)
+        characters = storyboard_project.get('characters', [])
+        for i, storyboard in enumerate(storyboard_project['storyboards']):
+            task = self.prepare_and_generate_image(task_id, storyboard, characters, art_style)
+            tasks.append(task)
 
-            # wait for all tasks to complete
-            results = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            for result, storyboard in zip(results, storyboard_project['storyboards']):
-                if result:
-                    image_filename, success = result
-                    if success:
-                        storyboard['image'] = image_filename
-                        image_files.append(image_filename)
-                    else:
-                        # TODO: use a placeholder image
-                        create_blank_image(image_filename)
-                        storyboard['image'] = image_filename
-                        image_files.append(image_filename)
-
-        except Exception as e:
-            logger.error(f"Error in generate_and_download_images: {e}")
-
-        finally:
-            end_time = time.time()
-            total_time = end_time - start_time
-            logger.info(f"generate_and_download_images completed in {total_time:.2f} seconds")
-            logger.info(f"Total images generated: {len(image_files)}")
-
-        return image_files
-
-    async def generate_single_image(self, task_id: str, prompt: str, image_filename: str, storyboard: Dict[str, Any], image_number: int):
-        try:
-            image_data = await self.image_generator_func(task_id, prompt)
-            if image_data:
-                with open(image_filename, "wb") as f:
-                    f.write(image_data)
-                logger.info(f"Image {image_number} generated successfully: {image_filename}")
-                return image_filename, True
+        image_urls = []
+        for i, result in enumerate(results):
+            if isinstance(result, tuple) and len(result) == 2:
+                image_url, enhanced_prompt = result
+                if image_url is not None:
+                    storyboard_project['storyboards'][i]['image'] = image_url
+                    storyboard_project['storyboards'][i]['enhanced_prompt'] = enhanced_prompt
+                    storyboard_project['storyboards'][i]['error_message'] = None
+                    image_urls.append(image_url)
+                    logger.info(f"Image {i+1} generated successfully for task {task_id}: {image_url}")
+                else:
+                    error_message = "Image generation failed: image_url is None"
+                    logger.error(f"Error generating image {i+1} for task {task_id}: {error_message}")
+                    storyboard_project['storyboards'][i]['image'] = None
+                    storyboard_project['storyboards'][i]['enhanced_prompt'] = enhanced_prompt
+                    storyboard_project['storyboards'][i]['error_message'] = error_message
+                    image_urls.append(None)
             else:
-                logger.warning(f"Failed to generate image {image_number}")
-                return image_filename, False
-        except Exception as e:
-            logger.error(f"Error generating image {image_number}: {e}")
-            return image_filename, False
+                if isinstance(result, Exception):
+                    error_message = str(result)
+                else:
+                    error_message = f"Unexpected result: {result}"
+                
+                logger.error(f"Error generating image {i+1} for task {task_id}: {error_message}")
+                storyboard_project['storyboards'][i]['image'] = None
+                storyboard_project['storyboards'][i]['enhanced_prompt'] = None
+                storyboard_project['storyboards'][i]['error_message'] = error_message
+                image_urls.append(None)
+
+        end_time = time.time()
+        total_time = end_time - start_time
+        logger.info(f"generate_images completed for task {task_id} in {total_time:.2f} seconds")
+        logger.info(f"Total images generated for task {task_id}: {len(image_urls)}")
+
+        return image_urls

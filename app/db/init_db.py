@@ -19,7 +19,7 @@ async def init_db():
                 admin_user = User(
                     username=settings.ADMIN_USERNAME,
                     email=settings.ADMIN_EMAIL,
-                    hashed_password=get_password_hash(settings.ADMIN_PASSWORD).decode('utf-8'),  # Decode bytes to string
+                    hashed_password=get_password_hash(settings.ADMIN_PASSWORD),  
                     is_active=True,
                     is_admin=True
                 )

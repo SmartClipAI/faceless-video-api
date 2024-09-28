@@ -7,9 +7,13 @@ from app.core.config import settings
 from app.core.logging import logger
 import fal_client
 from app.models.image_task import ImageTask  # Make sure this import is at the top of the file
+from dotenv import load_dotenv
 
 
-async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) -> Optional[bytes]:
+# just for loading FAL_KEY
+load_dotenv()
+
+async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) -> Optional[str]:
     # Update task status to "processing"
     await ImageTask.update(task_id, status="processing")
 
@@ -29,13 +33,9 @@ async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) ->
             )
             if image_urls and isinstance(image_urls, list) and len(image_urls) > 0:
                 image_url = image_urls[0]
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(image_url) as response:
-                        response.raise_for_status()
-                        image_data = await response.read()
-                        # Update task status to "completed" and save the image data
-                        await ImageTask.update(task_id, status="completed", image=image_data)
-                        return image_data
+                # Update task status to "completed" and save the image URL
+                await ImageTask.update(task_id, status="completed", image_url=image_url)
+                return image_url
             else:
                 raise ValueError("No image URL returned from Replicate API")
         except Exception as e:
@@ -50,16 +50,14 @@ async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) ->
     return None
 
 
-async def fal_flux_api(task_id: str, prompt: str, max_retries: int = 3):
-    # Update task status to "processing"
-    await ImageTask.update(task_id, status="processing")
+async def fal_flux_api(task_id: str, prompt: str, max_retries: int = 3) -> Optional[str]:
 
     for attempt in range(max_retries):
         try:
             # Submit the task to fal.ai
             if settings.use_fal_flux_dev:
                 handler = await fal_client.submit_async(
-                    model=settings.fal_flux_dev_api.get('model'),
+                    settings.fal_flux_dev_api.get('model'),
                     arguments={
                         "prompt": prompt,
                         "image_size": settings.fal_flux_dev_api.get('image_size'),
@@ -71,7 +69,7 @@ async def fal_flux_api(task_id: str, prompt: str, max_retries: int = 3):
                 )
             else:
                 handler = await fal_client.submit_async(
-                    model=settings.fal_flux_schnell_api.get('model'),
+                    settings.fal_flux_schnell_api.get('model'),
                     arguments={
                         "prompt": prompt,
                         "image_size": settings.fal_flux_schnell_api.get('image_size'),
@@ -86,9 +84,8 @@ async def fal_flux_api(task_id: str, prompt: str, max_retries: int = 3):
             
             # Update task with the result
             image_urls = [image['url'] for image in result.get('images', [])]
-            await ImageTask.update(task_id, status="completed", images=image_urls)
 
-            return result
+            return image_urls[0]
 
         except Exception as e:
             if attempt < max_retries - 1:
@@ -102,23 +99,3 @@ async def fal_flux_api(task_id: str, prompt: str, max_retries: int = 3):
                 raise
 
     return None
-
-async def process_image_task(task_id: str):
-    task = await ImageTask.get(task_id)
-    if not task:
-        logger.error(f"Task {task_id} not found")
-        return
-
-    try:
-        result = await fal_flux_api(
-            task_id=task.id,
-            prompt=f"{task.story_topic} in {task.art_style} style",
-            num_images=1  # Adjust as needed
-        )
-        logger.info(f"Task {task_id} completed successfully")
-    except Exception as e:
-        logger.error(f"Failed to process task {task_id}: {str(e)}")
-        await ImageTask.update(task_id, status="failed")
-
-if __name__ == "__main__":
-    asyncio.run(process_image_task("your_task_id_here"))

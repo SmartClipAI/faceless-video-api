@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     REPLICATE_API_KEY: str | None = None
     replicate_api_token: str | None = None
     SECRET_KEY: str | None = None
+    FAL_KEY: str | None = None
 
     # Admin user settings
     ADMIN_USERNAME: str | None = None
@@ -39,13 +40,14 @@ class Settings(BaseSettings):
     tts: dict | None = None
     azure_api_version: str | None = None
     use_fal_flux: bool | None = None
+    use_fal_flux_dev: bool | None = None
 
 
     @field_validator('STORY_DIR', mode='before')
     def set_story_dir(cls, v, info):
         return v or os.path.join(os.path.dirname(info.data.get('BASE_DIR', '')), "data")
 
-    @field_validator('story_generation', 'storyboard', 'azure_openai', 'fal_flux_dev_api', 'fal_flux_schnell_api', 'replicate_flux_api', 'tts', 'azure_api_version', 'use_fal_flux', mode='before')
+    @field_validator('story_generation', 'storyboard', 'azure_openai', 'fal_flux_dev_api', 'fal_flux_schnell_api', 'replicate_flux_api', 'tts', 'azure_api_version', 'use_fal_flux', 'use_fal_flux_dev', mode='before')
     def load_json_config(cls, v, info):
         if v is None or (isinstance(v, (str, dict)) and not v):
             config_path = os.path.join(os.path.dirname(info.data.get('BASE_DIR', '')), 'config.json')

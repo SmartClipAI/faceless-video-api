@@ -13,10 +13,10 @@ class ImageResponse(BaseModel):
 class ImageStatus(BaseModel):
     id: str
     status: str
-    url: Optional[str]
-    subtitles: Optional[str]
+    url: Optional[str] = None
+    subtitles: Optional[str] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None  # Make updated_at optional
 
 class ImageTaskStatus(BaseModel):
     task_id: str

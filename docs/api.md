@@ -392,8 +392,7 @@ No request body is required for this endpoint.
 ```json
 {
     "image_id": "string",
-    "task_id": "string",
-    "status_url": "string",
+    "status": "string",
     "created_at": "string"
 }
 
@@ -402,8 +401,7 @@ No request body is required for this endpoint.
 | Field | Type | Description |
 |-------|------|-------------|
 | image_id | integer | Unique identifier of the original image |
-| task_id | string | Unique identifier for this regeneration task |
-| status_url | string | URL to check the status of the regeneration task |
+| status | string |  Status of the image (e.g., "processing", "completed", "failed") |
 | created_at | string | ISO 8601 timestamp of when the regeneration task was created |
 
 ###### Error Response
@@ -432,7 +430,6 @@ curl -X POST https://api.example.com/v1/images/img_003ghi \
 ```json
 {
     "image_id": "img_003ghi",
-    "task_id": "task_abcde12345",
     "status_url": "/images/img_003ghi",
     "created_at": "2023-04-02T10:30:00Z"
 }

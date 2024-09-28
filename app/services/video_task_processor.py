@@ -24,13 +24,13 @@ class VideoTaskProcessor:
 
     async def process_video_generation_task(self, task_id: str, story_topic: str, image_style: str, duration: int, language: str, voice_name: str):
         task = await VideoTask.get(task_id)
-        await task.update(status="Generating story")
+        await task.update(status="processing")
 
         story_type = self.map_topic_to_story_type(story_topic)
         title, story = await self.story_generator.generate_story_and_title(story_type)
         if not title or not story:
             logger.error("Failed to generate story and title")
-            await task.update(status="Failed")
+            await task.update(status="failed")
             return
 
         await task.update(progress=0.2)
@@ -44,7 +44,7 @@ class VideoTaskProcessor:
         storyboard_project = await self.story_generator.generate_storyboard(story_type, title, story, [c["name"] for c in characters])
         if not storyboard_project.get("storyboards"):
             logger.error("Failed to generate storyboard")
-            await task.update(status="Failed")
+            await task.update(status="failed")
             return
 
         await task.update(progress=0.5)
@@ -61,9 +61,9 @@ class VideoTaskProcessor:
             video_path = os.path.join(story_dir, "story_video.mp4")
             await self.video_creator.create_video(storyboard_project, video_path, audio_dir, voice_name)
             
-            await task.update(status="Completed", progress=1.0)
+            await task.update(status="completed", progress=1.0)
         else:
-            await task.update(status="Failed")
+            await task.update(status="failed")
 
     def map_topic_to_story_type(self, topic: str) -> str:
         topic_lower = topic.lower()
