@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Enum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +15,7 @@ class Image(Base):
 
     id = Column(String, primary_key=True, index=True)
     task_id = Column(String, ForeignKey("image_tasks.id"), nullable=False, index=True)
-    url = Column(String)
+    urls = Column(JSONB, default=list)
     subtitles = Column(Text)
     enhanced_prompt = Column(Text)
     error_message = Column(Text)

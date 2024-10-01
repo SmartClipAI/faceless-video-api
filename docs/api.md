@@ -300,7 +300,7 @@ Retrieves the status of a specific story image generation task, including the st
 | images | array | List of generated images (empty if not completed) |
 | images[].id | string | Unique identifier for each generated image |
 | images[].status | string | Status of the individual image (e.g., "processing", "completed", "failed") |
-| images[].url | string | URL of the generated image |
+| images[].urls | string | List of URL of the generated image |
 | images[].subtitles | string | Subtitles or description for the image |
 
 ###### Error Response
@@ -393,7 +393,7 @@ No request body is required for this endpoint.
 {
     "id": "string",
     "status": "string",
-    "url": "string",
+    "urls": "list",
     "created_at": "string",
     "updated_at": "string"
 }
@@ -404,7 +404,7 @@ No request body is required for this endpoint.
 |-------|------|-------------|
 | id | integer | Unique identifier of the original image |
 | status | string |  Status of the image (e.g., "processing", "completed", "failed") |
-| url | string | URL of the regenerated image |
+| urls | string | List of URL of the regenerated image |
 | created_at | string | ISO 8601 timestamp of when the regeneration task was created |
 | updated_at | string | ISO 8601 timestamp of when the regeneration task was updated |
 
@@ -466,7 +466,7 @@ Retrieves the status of a specific image within an image generation task.
 ```json
 {
     "image_id": "string",
-    "url": "string",
+    "urls": "list",
     "subtitles": "string",
     "status": "string",
     "created_at": "string",
@@ -480,7 +480,7 @@ Retrieves the status of a specific image within an image generation task.
 |-------|------|-------------|
 | image_id | string | Unique identifier of the image |
 | task_id | string | Unique identifier for the image generation task |
-| url | string | URL of the generated image |
+| urls | string | List of URL of the generated image |
 | subtitles | string | Subtitles or description for the image |
 | status | string | Status of the image (e.g., "completed", "regenerating", "failed") |
 | created_at | string | ISO 8601 timestamp of when the image was first created |
@@ -511,7 +511,7 @@ curl -X GET https://api.example.com/v1/images/img_003ghi/tasks/task_7890xyz/stat
 {
     "image_id": "img_003ghi",
     "task_id": "task_7890xyz",
-    "url": "https://example.com/generated_images/img_003ghi.jpg",
+    "urls": ["https://example.com/generated_images/img_003ghi.jpg"],
     "subtitles": "A time traveler materializes in the Roman Forum",
     "status": "completed",
     "created_at": "2023-04-01T12:00:00Z",

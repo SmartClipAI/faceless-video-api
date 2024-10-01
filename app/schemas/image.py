@@ -12,7 +12,7 @@ class ImageResponse(BaseModel):
 
 class RegenerateImageResponse(BaseModel):
     task_id: str
-    url: str
+    urls: List[str]
     status: str
     created_at: datetime
     updated_at: datetime
@@ -20,7 +20,7 @@ class RegenerateImageResponse(BaseModel):
 class ImageStatus(BaseModel):
     id: str
     status: str
-    url: Optional[str] = None
+    urls: Optional[List[str]] = None
     subtitles: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None  # Make updated_at optional

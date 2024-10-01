@@ -62,7 +62,7 @@ class ImageTaskProcessor:
                     await Image.create(
                         id=str(uuid4()),
                         task_id=task_id,
-                        url=image_url,
+                        urls=[image_url] if image_url else [],
                         subtitles=storyboard_project["storyboards"][i]["description"],
                         status="completed",
                         enhanced_prompt=storyboard_project["storyboards"][i].get("enhanced_prompt", ""),
@@ -72,7 +72,7 @@ class ImageTaskProcessor:
                     await Image.create(
                         id=str(uuid4()),
                         task_id=task_id,
-                        url=None,
+                        url=[],
                         subtitles=storyboard_project["storyboards"][i]["description"],
                         status="failed",
                         enhanced_prompt=storyboard_project["storyboards"][i].get("enhanced_prompt", ""),

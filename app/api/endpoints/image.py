@@ -41,7 +41,7 @@ async def get_task_status(task_id: str, current_user: dict = Depends(get_current
         images=[ImageStatus(
             id=image.id,
             status=image.status,
-            url=image.url,
+            urls=image.urls,
             subtitles=image.subtitles,
             created_at=image.created_at,
             updated_at=image.updated_at if image.updated_at else None
@@ -64,7 +64,7 @@ async def regenerate_image(
         return RegenerateImageResponse(
             task_id=image.task_id,
             status=updated_image.status,
-            url=new_image_url,
+            urls=updated_image.urls,
             created_at=updated_image.created_at,
             updated_at=updated_image.updated_at
         )
