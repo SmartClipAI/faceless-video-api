@@ -5,6 +5,7 @@ from app.models.user import User
 from app.schemas.token import Token
 from datetime import timedelta
 from app.core.config import settings
+from app.core.logging import logger
 
 router = APIRouter()
 

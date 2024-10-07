@@ -1,8 +1,9 @@
 import os
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from PIL import Image
 from app.core.logging import logger
+from app.core.config import settings
 
 
 def create_resource_dir(base_dir: str, story_type: str, title: str) -> str:
@@ -38,3 +39,11 @@ def create_blank_image(filename, width=720, height=1280):
     blank_image = Image.new('RGB', (width, height), color='black')
     blank_image.save(filename)
     logger.info(f"Created blank image: {filename}")
+
+def get_story_limit(duration: str) -> Tuple[int, int]:
+    if duration == "short":
+        return (settings.story_limit_short.get('char_limit_min', 700), settings.story_limit_short.get('char_limit_max', 800))
+    elif duration == "long":
+        return (settings.story_limit_long.get('char_limit_min', 900), settings.story_limit_long.get('char_limit_max', 1000))
+    else:
+        raise ValueError(f"Invalid duration: {duration}")

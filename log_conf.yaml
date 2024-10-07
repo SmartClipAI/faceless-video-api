@@ -18,19 +18,19 @@ handlers:
     stream: ext://sys.stdout
 loggers:
   uvicorn.error:
-    level: INFO
+    level: DEBUG
     handlers:
       - file
       - console
     propagate: no
   uvicorn.access:
-    level: INFO
+    level: DEBUG
     handlers:
       - file
       - console
     propagate: no
 root:
-  level: INFO
+  level: DEBUG
   handlers:
     - file
     - console

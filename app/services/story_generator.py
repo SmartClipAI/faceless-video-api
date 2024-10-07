@@ -7,14 +7,16 @@ import re
 from app.utils.helpers import call_azure_openai_api, create_empty_storyboard
 from app.core.config import settings
 from app.core.logging import logger
+from app.utils.helpers import get_story_limit
+
 
 class StoryGenerator:
     def __init__(self, client):
         self.client = client
         self.config = settings
 
-    async def generate_story_and_title(self, story_type: str) -> Tuple[str, str]:
-        char_limit = (self.config.story_generation.get('char_limit_min', 700), self.config.story_generation.get('char_limit_max', 800))
+    async def generate_story_and_title(self, story_type: str, duration: str) -> Tuple[str, str]:
+        char_limit = get_story_limit(duration)
         prompt = self._get_prompt(story_type, char_limit)
         messages = [
             {

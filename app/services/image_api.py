@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.config import settings
 from app.core.logging import logger
 import fal_client
-from app.models.image_task import ImageTask  # Make sure this import is at the top of the file
+from app.models.video_task import VideoTask  # Make sure this import is at the top of the file
 from dotenv import load_dotenv
 
 
@@ -15,7 +15,7 @@ load_dotenv()
 
 async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) -> Optional[str]:
     # Update task status to "processing"
-    await ImageTask.update(task_id, status="processing")
+    await VideoTask.update(task_id, status="processing")
 
     payload = {
         "prompt": prompt,
@@ -34,7 +34,7 @@ async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) ->
             if image_urls and isinstance(image_urls, list) and len(image_urls) > 0:
                 image_url = image_urls[0]
                 # Update task status to "completed" and save the image URL
-                await ImageTask.update(task_id, status="completed", image_url=image_url)
+                await VideoTask.update(task_id, status="completed", image_url=image_url)
                 return image_url
             else:
                 raise ValueError("No image URL returned from Replicate API")
@@ -46,7 +46,7 @@ async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) ->
             else:
                 logger.error(f"Error in Flux Schnell generation after {max_retries} attempts: {e}")
                 # Update task status to "failed" if all attempts fail
-                await ImageTask.update(task_id, status="failed", error_message=str(e))
+                await VideoTask.update(task_id, status="failed", error_message=str(e))
     return None
 
 
@@ -95,7 +95,7 @@ async def fal_flux_api(task_id: str, prompt: str, max_retries: int = 3) -> Optio
             else:
                 logger.error(f"Error in fal_flux_api after {max_retries} attempts: {str(e)}")
                 # Update task status to "failed" if all attempts fail
-                await ImageTask.update(task_id, status="failed", error_message=str(e))
+                await VideoTask.update(task_id, status="failed", error_message=str(e))
                 raise
 
     return None

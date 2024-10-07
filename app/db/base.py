@@ -3,12 +3,11 @@ from app.db.base_class import Base
 
 # Import all models
 from app.models.user import User
-from app.models.video import VideoTask
 from app.models.image import Image
+from app.models.video import Video
 
-# Remove the import of ImageTask from here
 
 # Instead, use this to make sure all models are registered:
-from app.models import image_task  # This imports the module, not the class directly
+from app.models import video_task
 
 # Add any other models here

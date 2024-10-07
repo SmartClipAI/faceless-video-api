@@ -2,8 +2,8 @@ from pydantic import BaseModel
 
 class VideoRequest(BaseModel):
     story_topic: str
-    image_style: str
-    duration: int
+    art_style: str
+    duration: str
     language: str
     voice_name: str
 

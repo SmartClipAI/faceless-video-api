@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.utils.helpers import create_blank_image
 from app.models.image import Image
-from app.models.image_task import ImageTask
+# from app.models.image_task import ImageTask
 import asyncio
 import time
 
@@ -134,6 +134,6 @@ class ImageGenerator:
             await Image.update(image_id, status="failed", updated_at=current_time)
             logger.error(f"Failed to regenerate image for task {task_id}, image {image_id}")
 
-        await ImageTask.update(task_id, updated_at=current_time)
+        # await ImageTask.update(task_id, updated_at=current_time)
 
         return image_url

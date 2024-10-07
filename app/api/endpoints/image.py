@@ -2,32 +2,30 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from app.schemas.image import ImageRequest, ImageResponse, ImageTaskStatus, ImageStatus, RegenerateImageResponse
 from app.core.security import get_current_user
 from app.core.config import settings
-from app.models.image_task import ImageTask
+from app.models.video_task import VideoTask
 from app.models.image import Image
 from app.services.image_generator import ImageGenerator
-from app.services.image_task_processor import ImageTaskProcessor
 from app.services.image_api import fal_flux_api, replicate_flux_api
 from uuid import uuid4
 
 router = APIRouter()
 image_gen_func = fal_flux_api if settings.use_fal_flux else replicate_flux_api
 image_generator = ImageGenerator(image_generator_func=image_gen_func)
-image_task_processor = ImageTaskProcessor()
 
-@router.post("/images", response_model=ImageResponse, status_code=status.HTTP_202_ACCEPTED)
-async def generate_story_images(
-    request: ImageRequest,
-    background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user)
-):
-    task_id = str(uuid4())
-    await ImageTask.create(id=task_id, status="queued", progress=0.0, story_topic=request.story_topic, art_style=request.art_style)
-    background_tasks.add_task(image_task_processor.process_image_generation_task, task_id, request.story_topic, request.art_style)
-    return ImageResponse(task_id=task_id, status="queued")
+# @router.post("/images", response_model=ImageResponse, status_code=status.HTTP_202_ACCEPTED)
+# async def generate_story_images(
+#     request: ImageRequest,
+#     background_tasks: BackgroundTasks,
+#     current_user: dict = Depends(get_current_user)
+# ):
+#     task_id = str(uuid4())
+#     await ImageTask.create(id=task_id, status="queued", progress=0.0, story_topic=request.story_topic, art_style=request.art_style)
+#     background_tasks.add_task(image_task_processor.process_image_generation_task, task_id, request.story_topic, request.art_style)
+#     return ImageResponse(task_id=task_id, status="queued")
 
 @router.get("/images/tasks/{task_id}", response_model=ImageTaskStatus)
 async def get_task_status(task_id: str, current_user: dict = Depends(get_current_user)):
-    task = await ImageTask.get(task_id)
+    task = await VideoTask.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     

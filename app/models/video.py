@@ -1,72 +1,78 @@
-from app.db.base_class import Base
-from sqlalchemy import Column, String, Float, DateTime, select
+from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Enum
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import async_session
-from typing import Optional
+from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError
+from typing import Optional, List
+from app.db.base_class import Base
+from app.db.session import async_session
 from app.core.logging import logger
 
 
-class VideoTask(Base):
-    __tablename__ = "video_tasks"
+class Video(Base):
+    __tablename__ = "videos"
 
     id = Column(String, primary_key=True, index=True)
-    status = Column(String, index=True)
-    progress = Column(Float)
+    task_id = Column(String, ForeignKey("video_tasks.id"), nullable=False, index=True)
+    url = Column(String)
+    error_message = Column(Text)
+    status = Column(Enum('queued', 'processing', 'completed', 'failed', name='video_status'), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    task = relationship("VideoTask", back_populates="video")
+
     @classmethod
-    async def create(cls, **kwargs) -> Optional['VideoTask']:
+    async def create(cls, **kwargs) -> Optional['Video']:
         try:
             async with async_session() as session:
-                task = cls(**kwargs)
-                session.add(task)
+                video = cls(**kwargs)
+                session.add(video)
                 await session.commit()
-                await session.refresh(task)
-            return task
+                await session.refresh(video)
+            return video
         except SQLAlchemyError as e:
-            logger.error(f"Error creating task: {e}")
+            logger.error(f"Error creating video: {e}")
             return None
 
     @classmethod
-    async def get(cls, task_id: str) -> Optional['VideoTask']:
+    async def get(cls, video_id: str) -> Optional['Video']:
         async with async_session() as session:
-            return await session.get(cls, task_id)
-    
-    @classmethod
-    async def update(cls, task_id: str, **kwargs) -> Optional['VideoTask']:
-        async with async_session() as session:
-            task = await session.get(cls, task_id)
-            if task:
-                for key, value in kwargs.items():
-                    setattr(task, key, value)
-                await session.commit()
-                await session.refresh(task)
-            return task
+            return await session.get(cls, video_id)
 
     @classmethod
-    async def delete(cls, task_id: str) -> bool:
+    async def update(cls, video_id: str, **kwargs) -> Optional['Video']:
         async with async_session() as session:
-            task = await session.get(cls, task_id)
-            if task:
-                await session.delete(task)
+            video = await session.get(cls, video_id)
+            if video:
+                for key, value in kwargs.items():
+                    setattr(video, key, value)
+                await session.commit()
+                await session.refresh(video)
+            return video
+
+    @classmethod
+    async def delete(cls, video_id: str) -> bool:
+        async with async_session() as session:
+            video = await session.get(cls, video_id)
+            if video:
+                await session.delete(video)
                 await session.commit()
                 return True
             return False
 
     @classmethod
-    async def list(cls, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> list['VideoTask']:
+    async def list_by_task(cls, task_id: str, limit: int = 100, offset: int = 0) -> List['Video']:
         async with async_session() as session:
-            query = select(cls).limit(limit).offset(offset)
-            if status:
-                query = query.filter(cls.status == status)
+            query = select(cls).filter(cls.task_id == task_id).limit(limit).offset(offset)
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def save(self) -> None:
+    @classmethod
+    async def get_by_task_and_status(cls, task_id: str, status: str) -> List['Video']:
         async with async_session() as session:
-            session.add(self)
-            await session.commit()
-            await session.refresh(self)
+            query = select(cls).filter(cls.task_id == task_id, cls.status == status)
+            result = await session.execute(query)
+            return result.scalars().all()

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from app.schemas.video import VideoRequest, VideoResponse, TaskStatus
 from app.core.security import get_current_user
-from app.models.video import VideoTask
+from app.models.video_task import VideoTask
 from app.services.video_task_processor import VideoTaskProcessor
 from uuid import uuid4
 
@@ -15,9 +15,9 @@ async def generate_video(
     current_user: dict = Depends(get_current_user)
 ):
     task_id = str(uuid4())
-    await VideoTask.create(id=task_id, status="Queued", progress=0.0)
-    background_tasks.add_task(video_task_processor.process_video_generation_task, task_id, request.story_topic, request.image_style, request.duration, request.language, request.voice_name)
-    return VideoResponse(task_id=task_id, status="Queued")
+    await VideoTask.create(id=task_id, status="queued", progress=0.0, story_topic=request.story_topic, art_style=request.art_style, duration=request.duration, language=request.language, voice_name=request.voice_name)
+    background_tasks.add_task(video_task_processor.process_video_generation_task, task_id, request.story_topic, request.art_style, request.duration, request.language, request.voice_name)
+    return VideoResponse(task_id=task_id, status="queued")
 
 @router.get("/status/{task_id}", response_model=TaskStatus)
 async def get_task_status(task_id: str, current_user: dict = Depends(get_current_user)):

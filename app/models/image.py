@@ -14,7 +14,7 @@ class Image(Base):
     __tablename__ = "images"
 
     id = Column(String, primary_key=True, index=True)
-    task_id = Column(String, ForeignKey("image_tasks.id"), nullable=False, index=True)
+    task_id = Column(String, ForeignKey("video_tasks.id"), nullable=False, index=True)
     urls = Column(JSONB, default=list)
     subtitles = Column(Text)
     enhanced_prompt = Column(Text)
@@ -23,7 +23,7 @@ class Image(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    task = relationship("ImageTask", back_populates="images")
+    task = relationship("VideoTask", back_populates="images")
 
     @classmethod
     async def create(cls, **kwargs) -> Optional['Image']:
@@ -35,7 +35,7 @@ class Image(Base):
                 await session.refresh(image)
             return image
         except SQLAlchemyError as e:
-            logger.error(f"Error creating image: {e}")
+            logger.error(f"Error creating image in database: {e}")
             return None
 
     @classmethod

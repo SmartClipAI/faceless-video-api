@@ -1,10 +1,14 @@
 {
-    "story_generation": {
+    "story_limit_short": {
       "char_limit_min": 700,
       "char_limit_max": 800 
     },
+    "story_limit_long": {
+      "char_limit_min": 900,
+      "char_limit_max": 1000 
+    },
     "storyboard": {
-      "max_scenes": 12
+      "max_scenes": 14
     },
     "azure_openai": {
       "model": "gpt-4o",

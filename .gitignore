@@ -40,3 +40,6 @@ dist/
 
 # Ignore package manager directories
 node_modules/
+
+# ignore logs
+logs/
