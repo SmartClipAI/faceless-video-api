@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from typing import Dict, Any, Tuple
 from PIL import Image
@@ -7,22 +8,29 @@ from app.core.config import settings
 
 
 def create_resource_dir(base_dir: str, story_type: str, title: str) -> str:
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '_')).rstrip()
-    dir_name = f"{timestamp}_{story_type}_{safe_title[:50]}"
-    full_path = os.path.join(base_dir, dir_name)
-    os.makedirs(full_path, exist_ok=True)
-    return full_path
+    # Remove leading/trailing spaces and quotes, then replace special characters and spaces
+    clean_title = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', title.strip().strip('"')))
 
-async def call_azure_openai_api(client, messages):
+    # Create a directory for the story type
+    story_type_dir = os.path.join(base_dir, story_type)
+    os.makedirs(story_type_dir, exist_ok=True)
+
+    # Create a directory for this story
+    story_dir = os.path.join(story_type_dir, clean_title)
+    os.makedirs(story_dir, exist_ok=True)
+
+    return story_dir
+
+async def call_openai_api(client, messages):
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o",
+            model=settings.openai.get('model'),
+            temperature=settings.openai.get('temperature'),
             messages=messages
         )
         return response.choices[0].message.content
     except Exception as e:
-        logger.error(f"Error calling Azure OpenAI API: {e}")
+        logger.error(f"Error calling OpenAI API: {e}")
         return None
 
 def create_empty_storyboard(title: str) -> Dict[str, Any]:

@@ -13,18 +13,21 @@ class VideoTask(Base):
     __tablename__ = "video_tasks"
 
     id = Column(String, primary_key=True, index=True)
+    url = Column(String, nullable=True)
     story_topic = Column(String, nullable=False)
     art_style = Column(String, nullable=False)
     duration = Column(Enum('short', 'long', name='duration'), nullable=False)
-    language = Column(Enum('english', 'czech', 'danish', 'dutch', 'french', 'german', 'greek', 'hindi', 'indonesian', 'italian', 'japanese', 'norwegian', 'polish', 'portuguese', 'russian', 'spanish', 'swedish', 'turkish', 'ukrainian', name='language'), nullable=False)
     voice_name = Column(Enum('echo', 'alloy', 'onyx', 'fable', 'nova', 'shimmer', name='voice_name'), nullable=False)
-    status = Column(Enum('queued', 'processing', 'completed', 'failed', name='status'), nullable=False)
-    progress = Column(Float, default=0.0)
+    language = Column(Enum('english', 'czech', 'danish', 'dutch', 'french', 'german', 'greek', 'hindi', 'indonesian', 'italian', 'japanese', 'norwegian', 'polish', 'portuguese', 'russian', 'spanish', 'swedish', 'turkish', 'ukrainian', name='language'), nullable=False)
+    story_title = Column(Text)
+    story_description = Column(Text)
     story_text = Column(Text)
+    status = Column(Enum('queued', 'processing', 'completed', 'failed', name='status'), nullable=False)
+    error_message = Column(Text)
+    progress = Column(Float, default=0.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    video = relationship("Video", back_populates="task")
     images = relationship("Image", back_populates="task")
 
     @classmethod
@@ -35,9 +38,10 @@ class VideoTask(Base):
                 session.add(task)
                 await session.commit()
                 await session.refresh(task)
+                logger.info(f"VideoTask with task_id {kwargs.get('id')} created successfully")
             return task
         except SQLAlchemyError as e:
-            logger.error(f"Error creating task: {e}")
+            logger.error(f"Error creating VideoTask: {e}")
             return None
 
     @classmethod
@@ -54,6 +58,9 @@ class VideoTask(Base):
                     setattr(task, key, value)
                 await session.commit()
                 await session.refresh(task)
+                logger.info(f"VideoTask with task_id {task_id} updated successfully")
+            else:
+                logger.error(f"VideoTask with task_id {task_id} not found")
             return task
 
     @classmethod

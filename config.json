@@ -10,10 +10,11 @@
     "storyboard": {
       "max_scenes": 14
     },
-    "azure_openai": {
+    "openai": {
       "model": "gpt-4o",
       "temperature": 0.9
     },
+    "azure_api_version": "2024-05-01-preview",
     "replicate_flux_api": {
       "model": "black-forest-labs/flux-dev",
       "aspect_ratio": "9:16",
@@ -39,7 +40,7 @@
     "tts": {
       "speech_rate": 1.1
     },
-    "azure_api_version": "2024-05-01-preview",
+    "use_azure_openai": false,
     "use_fal_flux": true,
     "use_fal_flux_dev": false
 }

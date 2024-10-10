@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Any, List, Tuple
 import json
 import re
-from app.utils.helpers import call_azure_openai_api, create_empty_storyboard
+from app.utils.helpers import call_openai_api, create_empty_storyboard
 from app.core.config import settings
 from app.core.logging import logger
 from app.utils.helpers import get_story_limit
@@ -15,64 +15,51 @@ class StoryGenerator:
         self.client = client
         self.config = settings
 
-    async def generate_story_and_title(self, story_type: str, duration: str) -> Tuple[str, str]:
+    async def generate_story_and_title(self, story_type: str, language: str, duration: str) -> Tuple[str, str, str]:
         char_limit = get_story_limit(duration)
-        prompt = self._get_prompt(story_type, char_limit)
+        prompt = self._get_prompt(story_type, char_limit, language)
         messages = [
             {
                 "role": "system",
-                "content": '''You are a versatile content creator skilled in storytelling, and creating content for various audiences. Your content is known for:
+                "content": f'''You are a versatile content creator skilled in storytelling, and creating content for various audiences in {language}. Your content is known for:
                 1. Engaging and informative writing across various genres
                 2. Clear and concise communication of complex ideas
                 3. Adapting language and style to suit different content types and audiences
                 4. Creating compelling narratives or informative lists as required
                 5. Crafting catchy, relevant titles that capture the essence of the content
+                6. Generating concise and engaging descriptions with relevant hashtags
 
                 You excel at following specific guidelines while maintaining creativity and relevance in your content creation.
 
                 When creating titles:
                 - Make them attractive and attention-grabbing
                 - Ensure they are unique and avoid repetition
-                - Capture the essence of the content while piquing curiosity'''
+                - Capture the essence of the content while piquing curiosity
+
+                When creating descriptions:
+                - Provide an overview of the content in 150-200 characters
+                - Include 2-4 relevant hashtags, followed by #facelessvideos.app as the last hashtag'''
             },
             {"role": "user", "content": prompt},
         ]
 
-        response = await call_azure_openai_api(self.client, messages)
+        response = await call_openai_api(self.client, messages)
         if response:
-            parts = response.split("\n\n", 1)
-            if len(parts) == 2:
+            parts = response.split("\n\n", 2)
+            if len(parts) == 3:
                 title = parts[0].replace("Title: ", "").strip()
-                content = parts[1].strip()
-                return title, content
-        return None, None
-
-    async def translate_to_chinese(self, storyboard_project: Dict[str, Any]) -> Dict[str, Any]:
-        translated_project = storyboard_project.copy()
-        translated_project['storyboards'] = []
-
-        all_texts = []
-        for storyboard in storyboard_project['storyboards']:
-            all_texts.append(storyboard['description'])
-            all_texts.append(storyboard['subtitles'])
-
-        combined_text = "\n\n---\n\n".join(all_texts)
-        
-        messages = [
-            {"role": "system", "content": "You are a translator. Translate the following English text to Chinese. Each text block is separated by '---'. Maintain the same structure in your translation."},
-            {"role": "user", "content": combined_text}
-        ]
-        
-        translated_text = await call_azure_openai_api(self.client, messages)
-        translated_blocks = translated_text.split("---")
-        
-        for i, storyboard in enumerate(storyboard_project['storyboards']):
-            translated_storyboard = storyboard.copy()
-            translated_storyboard['description'] = translated_blocks[i * 2].strip()
-            translated_storyboard['subtitles'] = translated_blocks[i * 2 + 1].strip()
-            translated_project['storyboards'].append(translated_storyboard)
-
-        return translated_project
+                description = parts[1].replace("Description: ", "").strip()
+                content = parts[2].strip()
+                
+                # Ensure #facelessvideos.app is the last hashtag
+                description_parts = description.rsplit('#', 1)
+                if len(description_parts) > 1:
+                    description = f"{description_parts[0].rstrip()} #facelessvideos.app"
+                else:
+                    description += " #facelessvideos.app"
+                
+                return title, description, content
+        return None, None, None
 
     async def generate_characters(self, story: str) -> List[Dict[str, str]]:
         prompt = f"""Based on the following story, create detailed descriptions for each character, including their name, ethnicity, gender, age, facial features, body type, hair style, and accessories. Focus on permanent or long-term attributes.
@@ -127,7 +114,7 @@ class StoryGenerator:
             {"role": "user", "content": prompt},
         ]
 
-        response = await call_azure_openai_api(self.client, messages)
+        response = await call_openai_api(self.client, messages)
         if not response:
             logger.error("API returned empty response")
         
@@ -156,7 +143,29 @@ class StoryGenerator:
         else:
             return await self._generate_general_storyboard(title, story, character_names)
 
-    def _get_prompt(self, story_type: str, char_limit: Tuple[int, int]) -> str:
+    def _get_prompt(self, story_type: str, char_limit: Tuple[int, int], language: str) -> str:
+        base_prompt = f'''
+        Create content in {language} based on the following guidelines:
+
+        1. Title: Create an engaging and relevant title.
+        2. Description: Write a 150-200 character description that provides an overview of the content. Include 2-4 relevant hashtags, followed by #facelessvideos.app as the last hashtag.
+        3. Content: Generate the main content according to the specific guidelines below.
+
+        {self._get_specific_prompt(story_type, char_limit)}
+
+        Important: Please ensure the total character count of the main content is between {char_limit[0]} and {char_limit[1]} characters.
+
+        Format your response as follows:
+        Title: [Your generated title]
+
+        Description: [Your 150-200 character description with 2-4 hashtags, followed by #facelessvideos.app]
+
+        [Your generated content]
+        '''
+
+        return base_prompt
+
+    def _get_specific_prompt(self, story_type: str, char_limit: Tuple[int, int]) -> str:
         if story_type.lower() == "philosophy":
             return f'''
             As a philosopher and storyteller, create an engaging and thought-provoking philosophical story or dialogue. 
@@ -172,13 +181,6 @@ class StoryGenerator:
 
             Ensure the story or dialogue is accessible to a general audience while maintaining philosophical depth and rigor. 
             Aim to stimulate critical thinking and encourage readers to question their assumptions about the topic.
-
-            Important: Please ensure the total character count is between {char_limit[0]} and {char_limit[1]} characters.
-
-            Format your response as follows:
-            Title: [Your generated title]
-
-            [Your generated philosophical story or dialogue]
             '''
         elif story_type.lower() == "life pro tips":
             return f'''
@@ -428,7 +430,7 @@ class StoryGenerator:
             {"role": "user", "content": prompt},
         ]
 
-        response = await call_azure_openai_api(self.client, messages)
+        response = await call_openai_api(self.client, messages)
         if not response:
             logger.error("API returned empty response")
             return create_empty_storyboard(title)
@@ -562,7 +564,7 @@ class StoryGenerator:
             {"role": "user", "content": prompt},
         ]
 
-        response = await call_azure_openai_api(self.client, messages)
+        response = await call_openai_api(self.client, messages)
         if not response:
             logger.error("API returned empty response")
             return create_empty_storyboard(title)
@@ -688,7 +690,7 @@ class StoryGenerator:
             {"role": "user", "content": prompt},
         ]
 
-        response = await call_azure_openai_api(self.client, messages)
+        response = await call_openai_api(self.client, messages)
         if not response:
             logger.error("API returned empty response")
             return create_empty_storyboard(title)
@@ -756,10 +758,9 @@ class StoryGenerator:
             - Composition types: single shot, two-shot, over-the-shoulder, insert shot, establishing shot
             - Shot sizes: extreme close-up, close-up, medium shot, full body shot, long shot, wide shot, extreme long shot
             - Lighting types: three-point lighting, high-key lighting, low-key lighting, natural lighting, practical lighting, motivated lighting, rim lighting, soft lighting, hard lighting, silhouette lighting
-            - Transition types: shake, zoom-in, zoom-out
+            - Transition types: zoom-in, zoom-out
 
-            Guidelines for using shake, zoom-in, and zoom-out transitions:
-            - Shake: Use for sudden events, accidents, or to convey tension. Examples: earthquakes, explosions, or intense emotional moments.
+            Guidelines for using zoom-in, and zoom-out transitions:
             - Zoom-in: Use to focus on important details, build tension, or show a character's point of view. Examples: revealing a clue, emphasizing a character's reaction, or creating suspense.
             - Zoom-out: Use to reveal context, end a scene, or show isolation. Examples: showing a character in a larger environment, concluding a sequence, or transitioning from a detail to a wider view.
 
@@ -772,7 +773,6 @@ class StoryGenerator:
                 - Don't use natural lighting for indoor scenes without windows.
                 - Ensure the camera description matches the physical space of the scene.
             3. For transitions, use ONLY the following types:
-                - shake
                 - zoom-in
                 - zoom-out
             4. DO NOT use any other transition types, including fade, dissolve, or cut.
@@ -832,7 +832,7 @@ class StoryGenerator:
             {"role": "user", "content": prompt},
         ]
 
-        response = await call_azure_openai_api(self.client, messages)
+        response = await call_openai_api(self.client, messages)
         if not response:
             logger.error("API returned empty response")
             return create_empty_storyboard(title)

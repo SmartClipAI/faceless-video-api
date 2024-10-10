@@ -14,23 +14,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) -> Optional[str]:
-    # Update task status to "processing"
-    await VideoTask.update(task_id, status="processing")
-
-    payload = {
-        "prompt": prompt,
-        "aspect_ratio": settings.REPLICATE_ASPECT_RATIO,
-        "num_inference_steps": settings.REPLICATE_NUM_INFERENCE_STEPS,
-        "guidance": settings.REPLICATE_GUIDANCE,
-        "output_quality": settings.REPLICATE_OUTPUT_QUALITY,
-    }
-
     for attempt in range(max_retries):
         try:
+            # Update task status to "processing"
+            await VideoTask.update(task_id, status="processing")
+
+            payload = {
+                "prompt": prompt,
+                "aspect_ratio": settings.replicate_flux_api.get('aspect_ratio'),
+                "num_inference_steps": settings.replicate_flux_api.get('num_inference_steps'),
+                "guidance": settings.replicate_flux_api.get('guidance'),
+                "output_quality": settings.replicate_flux_api.get('output_quality'),
+            }
+
             image_urls = replicate.run(
-                settings.REPLICATE_MODEL,
+                settings.replicate_flux_api.get('model'),
                 input=payload
             )
+
             if image_urls and isinstance(image_urls, list) and len(image_urls) > 0:
                 image_url = image_urls[0]
                 # Update task status to "completed" and save the image URL
@@ -38,15 +39,18 @@ async def replicate_flux_api(task_id: str, prompt: str, max_retries: int = 3) ->
                 return image_url
             else:
                 raise ValueError("No image URL returned from Replicate API")
+
         except Exception as e:
             if attempt < max_retries - 1:
-                logger.warning(f"Error in Flux Schnell generation (attempt {attempt + 1}/{max_retries}): {e}")
+                logger.warning(f"Error in replicate_flux_api (attempt {attempt + 1}/{max_retries}): {str(e)}")
                 logger.info("Retrying...")
                 await asyncio.sleep(1)  # Wait for 1 second before retrying
             else:
-                logger.error(f"Error in Flux Schnell generation after {max_retries} attempts: {e}")
+                logger.error(f"Error in replicate_flux_api after {max_retries} attempts: {str(e)}")
                 # Update task status to "failed" if all attempts fail
                 await VideoTask.update(task_id, status="failed", error_message=str(e))
+                raise
+
     return None
 
 

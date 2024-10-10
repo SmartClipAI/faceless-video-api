@@ -4,10 +4,10 @@ from app.db.base_class import Base
 # Import all models
 from app.models.user import User
 from app.models.image import Image
-from app.models.video import Video
+from app.models.video_task import VideoTask
 
 
 # Instead, use this to make sure all models are registered:
-from app.models import video_task
+# from app.models import video_task
 
 # Add any other models here

@@ -15,11 +15,10 @@ class Settings(BaseSettings):
     DATABASE_KEY: str | None = None
     AZURE_OPENAI_ENDPOINT: str | None = None
     AZURE_OPENAI_API_KEY: str | None = None
-    AZURE_SPEECH_KEY: str | None = None
-    AZURE_SPEECH_REGION: str | None = None
-    HUGGINGFACE_API_KEY: str | None = None
+    OPENAI_API_KEY: str | None = None
+    OPENAI_BASE_URL: str | None = None
     REPLICATE_API_KEY: str | None = None
-    replicate_api_token: str | None = None
+    REPLICATE_API_TOKEN: str | None = None
     SECRET_KEY: str | None = None
     FAL_KEY: str | None = None
 
@@ -36,7 +35,7 @@ class Settings(BaseSettings):
     story_limit_short: dict | None = None
     story_limit_long: dict | None = None
     storyboard: dict | None = None
-    azure_openai: dict | None = None
+    openai: dict | None = None
     fal_flux_dev_api: dict | None = None
     fal_flux_schnell_api: dict | None = None
     replicate_flux_api: dict | None = None
@@ -44,13 +43,17 @@ class Settings(BaseSettings):
     azure_api_version: str | None = None
     use_fal_flux: bool | None = None
     use_fal_flux_dev: bool | None = None
+    use_azure_openai: bool | None = None
 
+    R2_ENDPOINT: str | None = None
+    R2_ACCESS_KEY_ID: str | None = None
+    R2_SECRET_ACCESS_KEY: str | None = None
 
     @field_validator('STORY_DIR', mode='before')
     def set_story_dir(cls, v, info):
         return v or os.path.join(os.path.dirname(info.data.get('BASE_DIR', '')), "data")
 
-    @field_validator('story_limit_short', 'story_limit_long', 'storyboard', 'azure_openai', 'fal_flux_dev_api', 'fal_flux_schnell_api', 'replicate_flux_api', 'tts', 'azure_api_version', 'use_fal_flux', 'use_fal_flux_dev', mode='before')
+    @field_validator('story_limit_short', 'story_limit_long', 'storyboard', 'openai', 'fal_flux_dev_api', 'fal_flux_schnell_api', 'replicate_flux_api', 'tts', 'use_fal_flux', 'use_fal_flux_dev', 'use_azure_openai', 'azure_api_version', mode='before')
     def load_json_config(cls, v, info):
         if v is None or (isinstance(v, (str, dict)) and not v):
             config_path = os.path.join(os.path.dirname(info.data.get('BASE_DIR', '')), 'config.json')

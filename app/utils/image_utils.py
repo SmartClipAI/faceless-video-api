@@ -2,7 +2,19 @@ import os
 import aiohttp
 from app.core.logging import logger
 
-async def download_and_save_image(image_url: str, save_path: str) -> bool:
+
+ # async def download_image(self, url, output_path):
+    #     async with aiohttp.ClientSession() as session:
+    #         async with session.get(url) as response:
+    #             if response.status == 200:
+    #                 with open(output_path, 'wb') as f:
+    #                     f.write(await response.read())
+    #                 return output_path
+    #             else:
+    #                 logger.error(f"Failed to download image: {url}")
+    #                 return None
+
+async def download_image(image_url: str, save_path: str) -> bool:
     """
     Download an image from the given URL and save it to the specified path.
     
@@ -20,10 +32,11 @@ async def download_and_save_image(image_url: str, save_path: str) -> bool:
                     image_data = await response.read()
                     with open(save_path, "wb") as f:
                         f.write(image_data)
-                    return True
+                    return save_path
                 else:
                     logger.error(f"Failed to download image from {image_url}. Status code: {response.status}")
-                    return False
+                    return None
     except Exception as e:
+
         logger.error(f"Error downloading image from {image_url}: {str(e)}")
-        return False
+        return None
