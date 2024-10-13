@@ -23,6 +23,7 @@ class VideoTaskStatus(BaseModel):
     story_description: Optional[str] = None
     story_text: Optional[str] = None
     images: List[ImageStatus]
+    error_message: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

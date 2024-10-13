@@ -35,8 +35,7 @@ async def get_task_status(task_id: str, current_user: dict = Depends(get_current
         story_title=task.story_title,
         story_description=task.story_description,
         story_text=task.story_text,
-        created_at=task.created_at,
-        updated_at=task.updated_at,
+        error_message=task.error_message,
         images=[ImageStatus(
             id=image.id,
             status=image.status,
@@ -44,5 +43,7 @@ async def get_task_status(task_id: str, current_user: dict = Depends(get_current
             subtitles=image.subtitles,
             created_at=image.created_at,
             updated_at=image.updated_at
-        ) for image in images]
+        ) for image in images],
+        created_at=task.created_at,
+        updated_at=task.updated_at
     )

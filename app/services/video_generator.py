@@ -7,7 +7,7 @@ from moviepy.editor import (
 )
 from app.services.audio_generator import AudioGenerator
 from app.utils.transitions import zoom 
-import captacity
+import shortcap
 from app.core.config import settings
 from app.core.logging import logger
 from app.utils.image_utils import download_image
@@ -17,8 +17,8 @@ class VideoGenerator:
         self.audio_generator = AudioGenerator(client)
         self.font_path = os.path.join(settings.BASE_DIR, "resources/fonts")
 
-    async def add_subtitles(self, output_file, output_file_subtitle):
-        captacity.add_captions(
+    async def add_captions(self, output_file, output_file_subtitle):
+        shortcap.add_captions(
             video_file=output_file,
             output_file=output_file_subtitle,
             font=os.path.join(self.font_path, "impact.ttf"),
@@ -32,7 +32,8 @@ class VideoGenerator:
             word_highlight_color="yellow",
             line_count=1,
             padding=70,
-            use_local_whisper=True,
+            position="bottom",
+            use_local_whisper=False,
         )
 
     async def generate_video(self, storyboard_project, story_dir, voice_name):
@@ -86,7 +87,7 @@ class VideoGenerator:
             await asyncio.to_thread(final_clip.write_videofile, video_path, fps=24)
 
             subtitle_video_path = video_path.replace('.mp4', '_subtitle.mp4')
-            await self.add_subtitles(video_path, subtitle_video_path)
+            await self.add_captions(video_path, subtitle_video_path)
 
             return subtitle_video_path
         except Exception as e:
