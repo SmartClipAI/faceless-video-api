@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from datetime import datetime
 from .image import ImageStatus
@@ -9,6 +9,10 @@ class VideoRequest(BaseModel):
     duration: str
     language: str
     voice_name: str
+
+    @field_validator('story_topic', 'art_style', 'duration', 'language', 'voice_name', mode='before')
+    def to_lowercase(cls, v):
+        return v.lower() if isinstance(v, str) else v
 
 class VideoResponse(BaseModel):
     task_id: str

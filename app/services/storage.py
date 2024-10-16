@@ -15,7 +15,9 @@ class StorageService:
     async def upload_to_r2(self, file_path: str, object_name: str) -> Optional[str]:
         try:
             self.r2_client.upload_file(file_path, settings.R2_BUCKET_NAME, object_name)
-            url = f"{settings.R2_ENDPOINT}/{settings.R2_BUCKET_NAME}/{object_name}"
+            # url = f"{settings.R2_ENDPOINT}/{settings.R2_BUCKET_NAME}/{object_name}"
+            # for public access
+            url = f"{settings.R2_PUBLIC_ENDPOINT}/{object_name}"
             logger.info(f"File uploaded successfully to R2: {url}")
             return url
         except Exception as e:

@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     use_azure_openai: bool | None = None
 
     R2_ENDPOINT: str | None = None
+    R2_PUBLIC_ENDPOINT: str | None = None
     R2_ACCESS_KEY_ID: str | None = None
     R2_SECRET_ACCESS_KEY: str | None = None
 
