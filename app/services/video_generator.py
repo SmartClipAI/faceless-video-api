@@ -21,7 +21,7 @@ class VideoGenerator:
         shortcap.add_captions(
             video_file=output_file,
             output_file=output_file_subtitle,
-            font=os.path.join(self.font_path, "impact.ttf"),
+            font=os.path.join(self.font_path, "TitanOne.ttf"),
             font_size=70,
             font_color="white",
             stroke_width=3,

@@ -6,6 +6,7 @@ from typing import Optional, List
 from sqlalchemy.exc import SQLAlchemyError
 from app.db.base_class import Base  # Import Base from base_class, not from base
 from app.core.logging import logger
+from app.constants.story_types import STORY_TYPES
 
 
 
@@ -14,8 +15,8 @@ class VideoTask(Base):
 
     id = Column(String, primary_key=True, index=True)
     url = Column(String, nullable=True)
-    story_topic = Column(String, nullable=False)
-    art_style = Column(String, nullable=False)
+    story_topic = Column(Enum(*STORY_TYPES, name='story_topic'), nullable=False)
+    art_style = Column(Enum('photorealistic', 'cinematic', 'anime', 'comic-book', 'pixar-art', name='art_style'), nullable=False)
     duration = Column(Enum('short', 'long', name='duration'), nullable=False)
     voice_name = Column(Enum('echo', 'alloy', 'onyx', 'fable', 'nova', 'shimmer', name='voice_name'), nullable=False)
     language = Column(Enum('english', 'czech', 'danish', 'dutch', 'french', 'german', 'greek', 'hindi', 'indonesian', 'italian', 'chinese', 'japanese', 'norwegian', 'polish', 'portuguese', 'russian', 'spanish', 'swedish', 'turkish', 'ukrainian', name='language'), nullable=False)
