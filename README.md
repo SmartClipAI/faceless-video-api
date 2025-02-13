@@ -1,6 +1,22 @@
 # Faceless Video API
 
+---
+> ## 🎬 Special Offer from FacelessVideos.app!
+> 
+> ### Create Professional Faceless Videos with AI - In One Click!
+>
+> ✨ **One-stop automated video creation platform:**
+> - 🤖 Generate complete faceless videos from just text input
+> - 🎨 Choose between Flux Schnell and Flux Dev AI models
+> - 🎁 **Limited Time**: New users get 1000 FREE credits!
+>
+> [🚀 Start Creating Now →](https://facelessvideos.app/)
+---
+
+## Project Overview
+
 A FastAPI-based service that powers automated video content creation through AI. This API service streamlines the process of story generation, image creation, and video production by providing endpoints for generating stories, creating corresponding images, and compiling them into complete videos with subtitles.
+
 
 ## Features
 
