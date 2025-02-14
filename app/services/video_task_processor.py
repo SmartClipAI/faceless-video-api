@@ -99,6 +99,7 @@ class VideoTaskProcessor:
             video_name = os.path.basename(os.path.normpath(story_dir))
             object_name = f"videos/{task_id}/{video_name}.mp4"
             r2_url = await self.storage_service.upload_to_r2(video_path, object_name)
+            logger.info(f"Video uploaded to R2: {r2_url}")
             if not r2_url:
                 raise ValueError("Failed to upload video to R2")
 
